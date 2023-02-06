@@ -1,0 +1,33 @@
+{
+  "name": "site-delta-makeavoy",
+  "version": "2.0.0",
+  "description": "",
+  "main": "app.js",
+  "devDependencies": {
+    "clean-webpack-plugin": "^4.0.0",
+    "css-loader": "^6.7.3",
+    "html-webpack-plugin": "^5.5.0",
+    "sass": "^1.58.0",
+    "sass-loader": "^13.2.0",
+    "sitemap-webpack-plugin": "^1.1.1",
+    "style-loader": "^3.3.1",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node App.js",
+    "build": "webpack --mode=production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Auxnon/site-delta.git"
+  },
+  "author": "makeavoy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Auxnon/site-delta/issues"
+  },
+  "homepage": "https://github.com/Auxnon/site-delta#readme",
+  "dependencies": {}
+}

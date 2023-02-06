@@ -5,17 +5,36 @@ use rocket::{fairing::AdHoc, Request};
 #[macro_use]
 extern crate rocket;
 
+use rocket::fs::NamedFile;
+
 #[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+async fn index() -> Option<NamedFile> {
+    NamedFile::open("index.html").await.ok()
 }
+
+async fn makeavoy() -> Option<NamedFile> {
+    NamedFile::open("makeavoy-dist/index.html").await.ok()
+}
+
+async fn petrichor() -> Option<NamedFile> {
+    NamedFile::open("petrichor-dist/index.html").await.ok()
+}
+// #[get("/")]
+// fn index() -> &'static str {
+//     "Hello, world!"
+// }
 
 fn main() {
     rocket::ignite()
         .mount("/", routes![index])
-        .attach(AdHoc::on_request("GET", |req, _| {
-            for h in req.headers().get("Host") {
-                println!("header: {:?}", h);
+        .attach(AdHoc::on_request("GET", |req, data| {
+            match req.headers().get("Host").next() {
+                Some(h) => match h {
+                    "makeavoy.com" => makeavoy(),
+                    "petrichor.com" => petrichor(),
+                    _ => makeavoy(),
+                },
+                _ => makeavoy(),
             }
             // .iter()
             // .for_each(|h| println!("header: {:?}", h));
