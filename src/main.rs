@@ -20,8 +20,8 @@ struct State {
 #[tokio::main]
 async fn main() {
     tokio::join!(
-        serve(petrichor_serve(), 3001),
-        serve(makeavoy_serve(), 3002),
+        serve(makeavoy_serve(), 3001),
+        serve(petrichor_serve(), 3002),
         // serve(using_serve_dir_only_from_root_via_fallback(), 3003),
         // serve(using_serve_dir_with_handler_as_service(), 3004),
         // serve(two_serve_dirs(), 3005),
@@ -32,7 +32,10 @@ async fn main() {
 fn petrichor_serve() -> Router {
     let serve_dir =
         ServeDir::new("petrichor-dist").not_found_service(ServeFile::new("404/index.html"));
-    Router::new().fallback_service(serve_dir)
+    let templates = ServeDir::new("petrichor-templates");
+    Router::new()
+        .nest_service("/templates", templates)
+        .fallback_service(serve_dir)
 }
 
 fn makeavoy_serve() -> Router {
