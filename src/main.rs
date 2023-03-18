@@ -3,6 +3,7 @@ use axum::{
     extract::{Host, Path},
     handler::HandlerWithoutStateExt,
     http::{header, HeaderValue, Request, StatusCode},
+    middleware::{self, Next},
     response::{Html, IntoResponse, Response},
     routing::{any, get, get_service},
     Extension, Json, Router,
@@ -19,14 +20,57 @@ struct State {
 
 #[tokio::main]
 async fn main() {
-    tokio::join!(
-        serve(makeavoy_serve(), 3001),
-        serve(petrichor_serve(), 3002),
-        // serve(using_serve_dir_only_from_root_via_fallback(), 3003),
-        // serve(using_serve_dir_with_handler_as_service(), 3004),
-        // serve(two_serve_dirs(), 3005),
-        // serve(calling_serve_dir_from_a_handler(), 3006),
-    );
+    // let router = Router::new()
+    //     .route("/", get(main))
+    //     .with_state(())
+    //     .layer(middleware::from_fn(my_middleware));
+
+    // async fn my_middleware<B>(Host(host): Host, request: Request<B>, next: Next<B>) -> Response {
+    //     let lowcase_host = host.to_lowercase();
+
+    //     if lowcase_host == "example.com" || lowcase_host == "www.example.com" {
+    //         next.
+    //         return next.run(request).await;
+    //     }
+
+    //     StatusCode::NOT_FOUND.into_response()
+    // }
+
+    serve(
+        Router::new().fallback_service({
+            any(|Host(hostname): Host, request: Request<Body>| async move {
+                match hostname.as_str() {
+                    "petrichor.app" => petrichor_serve().oneshot(request).await,
+                    _ => makeavoy_serve().oneshot(request).await,
+                }
+            })
+        }),
+        443,
+    )
+    .await;
+
+    // serve(
+    //     Router::new().route("/", {
+    //         any(|Host(hostname): Host, request: Request<Body>| async move {
+    //             match hostname.as_str() {
+    //                 "website.com" => route1().oneshot(request).await,
+    //                 _ => route2().oneshot(request).await,
+    //             }
+    //         });
+    //     }),
+    //     3001,
+    // )
+    // .await;
+    // .layer(Extension(state));
+
+    // tokio::join!(
+    //     serve(makeavoy_serve(), 3001),
+    //     serve(petrichor_serve(), 3002),
+    //     // serve(using_serve_dir_only_from_root_via_fallback(), 3003),
+    //     // serve(using_serve_dir_with_handler_as_service(), 3004),
+    //     // serve(two_serve_dirs(), 3005),
+    //     // serve(calling_serve_dir_from_a_handler(), 3006),
+    // );
 }
 
 fn petrichor_serve() -> Router {
