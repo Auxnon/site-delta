@@ -1,22 +1,19 @@
 use axum::{
-    body::{self, Body, Empty, Full},
-    extract::{Host, Path},
-    handler::HandlerWithoutStateExt,
-    http::{header, HeaderValue, Request, StatusCode},
-    middleware::{self, Next},
-    response::{Html, IntoResponse, Response},
-    routing::{any, get, get_service},
-    Extension, Json, Router,
+    body::Body,
+    extract::Host,
+    http::Request,
+    routing::{any, get},
+    Router,
 };
+use axum_server::tls_rustls::RustlsConfig;
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
 
-struct State {
-    api_requests: AtomicUsize,
-    website_requests: AtomicUsize,
-}
+// struct State {
+//     api_requests: AtomicUsize,
+//     website_requests: AtomicUsize,
+// }
 
 #[tokio::main]
 async fn main() {
@@ -36,18 +33,63 @@ async fn main() {
     //     StatusCode::NOT_FOUND.into_response()
     // }
 
-    serve(
-        Router::new().fallback_service({
+    let nums = [127, 0, 0, 1];
+    let mut pems = None;
+    let d = if let Ok(s) = std::fs::read_to_string("config.txt") {
+        let lines: Vec<&str> = s.lines().collect::<Vec<&str>>();
+        if lines.len() == 0 {
+            nums
+        } else {
+            if lines.len() == 3 {
+                pems = Some((lines[1].to_string(), lines[2].to_string()));
+            }
+            let b: Vec<u8> = lines[0]
+                .split(":")
+                .collect::<Vec<&str>>()
+                .iter()
+                .enumerate()
+                .map(|(i, s)| s.trim().parse().unwrap_or(nums[i]))
+                .collect();
+            b.try_into().unwrap_or_else(|_| nums)
+        }
+    } else {
+        nums
+    };
+
+    println!(
+        "address: {:?} and {}",
+        d,
+        match &pems {
+            Some(p) => format!("searching for pems at {} and {}", p.0, p.1),
+            None => "no pems".to_string(),
+        }
+    );
+
+    // pet feature
+
+    #[cfg(feature = "dev")]
+    {
+        tokio::join!(
+            serve(makeavoy_serve(), 8080, d, None),
+            serve(petrichor_serve(), 8081, d, None),
+        );
+    }
+    #[cfg(not(feature = "dev"))]
+    {
+        let router = Router::new().fallback_service({
             any(|Host(hostname): Host, request: Request<Body>| async move {
+                println!("hostname: {}", hostname);
                 match hostname.as_str() {
-                    "petrichor.app" => petrichor_serve().oneshot(request).await,
+                    "petrichor64.app" => petrichor_serve().oneshot(request).await,
                     _ => makeavoy_serve().oneshot(request).await,
                 }
             })
-        }),
-        443,
-    )
-    .await;
+        });
+        tokio::join!(
+            serve(router.clone(), 8080, d, None),
+            serve(router, 443, d, pems),
+        );
+    }
 
     // serve(
     //     Router::new().route("/", {
@@ -98,59 +140,81 @@ fn makeavoy_serve() -> Router {
         .fallback_service(serve_dir)
 }
 
-fn using_serve_dir_only_from_root_via_fallback() -> Router {
-    // you can also serve the assets directly from the root (not nested under `/assets`)
-    // by only setting a `ServeDir` as the fallback
-    let serve_dir = ServeDir::new("assets").not_found_service(ServeFile::new("assets/index.html"));
+// fn using_serve_dir_only_from_root_via_fallback() -> Router {
+//     // you can also serve the assets directly from the root (not nested under `/assets`)
+//     // by only setting a `ServeDir` as the fallback
+//     let serve_dir = ServeDir::new("assets").not_found_service(ServeFile::new("assets/index.html"));
 
-    Router::new()
-        .route("/foo", get(|| async { "Hi from /foo" }))
-        .fallback_service(serve_dir)
-}
+//     Router::new()
+//         .route("/foo", get(|| async { "Hi from /foo" }))
+//         .fallback_service(serve_dir)
+// }
 
-fn using_serve_dir_with_handler_as_service() -> Router {
-    async fn handle_404() -> (StatusCode, &'static str) {
-        (StatusCode::NOT_FOUND, "Not found")
-    }
+// fn using_serve_dir_with_handler_as_service() -> Router {
+//     async fn handle_404() -> (StatusCode, &'static str) {
+//         (StatusCode::NOT_FOUND, "Not found")
+//     }
 
-    let serve_dir = ServeDir::new("assets").not_found_service(handle_404.into_service());
+//     let serve_dir = ServeDir::new("assets").not_found_service(handle_404.into_service());
 
-    Router::new()
-        .route("/foo", get(|| async { "Hi from /foo" }))
-        .fallback_service(serve_dir)
-}
+//     Router::new()
+//         .route("/foo", get(|| async { "Hi from /foo" }))
+//         .fallback_service(serve_dir)
+// }
 
-fn two_serve_dirs() -> Router {
-    // you can also have two `ServeDir`s nested at different paths
-    let serve_dir_from_assets = ServeDir::new("assets");
-    let serve_dir_from_dist = ServeDir::new("dist");
+// fn two_serve_dirs() -> Router {
+//     // you can also have two `ServeDir`s nested at different paths
+//     let serve_dir_from_assets = ServeDir::new("assets");
+//     let serve_dir_from_dist = ServeDir::new("dist");
 
-    Router::new()
-        .nest_service("/assets", serve_dir_from_assets)
-        .nest_service("/dist", serve_dir_from_dist)
-}
+//     Router::new()
+//         .nest_service("/assets", serve_dir_from_assets)
+//         .nest_service("/dist", serve_dir_from_dist)
+// }
 
-#[allow(clippy::let_and_return)]
-fn calling_serve_dir_from_a_handler() -> Router {
-    // via `tower::Service::call`, or more conveniently `tower::ServiceExt::oneshot` you can
-    // call `ServeDir` yourself from a handler
-    Router::new().nest_service(
-        "/foo",
-        get(|request: Request<Body>| async {
-            let service = ServeDir::new("assets");
-            let result = service.oneshot(request).await;
-            result
-        }),
-    )
-}
+// #[allow(clippy::let_and_return)]
+// fn calling_serve_dir_from_a_handler() -> Router {
+//     // via `tower::Service::call`, or more conveniently `tower::ServiceExt::oneshot` you can
+//     // call `ServeDir` yourself from a handler
+//     Router::new().nest_service(
+//         "/foo",
+//         get(|request: Request<Body>| async {
+//             let service = ServeDir::new("assets");
+//             let result = service.oneshot(request).await;
+//             result
+//         }),
+//     )
+// }
 
-async fn serve(app: Router, port: u16) {
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    // tracing::debug!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+async fn serve(app: Router, port: u16, address: [u8; 4], pems: Option<(String, String)>) {
+    let addr = SocketAddr::from((address, port));
+
+    if let Some(p) = pems {
+        if let Ok(config) = RustlsConfig::from_pem_file(
+            // "/home/maker/keys/fullchain.pem",
+            // "/home/maker/keys/privkey.pem",
+            p.0,
+            p.1,
+            // "examples/self-signed-certs/cert.pem",
+            // "examples/self-signed-certs/key.pem",
+        )
         .await
-        .unwrap();
+        {
+            println!("serving with tls");
+            axum_server::bind_rustls(addr, config)
+                .serve(app.into_make_service())
+                .await
+                .unwrap();
+        } else {
+            println!("keys missing or invalid, not serving on port{}", port);
+        }
+    } else {
+        println!("serving without tls on localhost:{}", port);
+        axum_server::bind(SocketAddr::from((address, port)))
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
+    }
 }
 
 // #[tokio::main]
