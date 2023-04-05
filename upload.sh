@@ -1,0 +1,1 @@
+scp ./target/arm-unknown-linux-musleabihf/release/site-delta maker@192.168.1.25:~/site-delta/site
