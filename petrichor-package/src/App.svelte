@@ -146,7 +146,7 @@
     description: "The Petrichor64 game engine official site and documentation",
     images: [
       {
-        url: "./p64.png",
+        url: "https://petrichor64.app/p64.png",
         width: 727,
         height: 146,
         alt: "Petrichor64 Logo",
@@ -160,7 +160,7 @@
     cardType: "summary_large_image",
     title: "Petrichor64 Website",
     description: "The Petrichor64 game engine official site and documentation",
-    image: "./p64.png",
+    image: "https://petrichor64.app/p64.png",
     imageAlt: "Twitter image alt",
   }}
 />
