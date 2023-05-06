@@ -11,6 +11,7 @@
   } from "@smui-extra/bottom-app-bar";
   import SvelteTooltip from "svelte-tooltip";
   import PIcon from "./lib/PIcon.svelte";
+  import { MetaTags } from "svelte-meta-tags";
 
   let main_color = "white";
   let value;
@@ -138,6 +139,31 @@
   <div class="mdc-fab__ripple" />
   <span class="mdc-fab__icon material-icons">favorite</span>
 </button> -->
+<MetaTags
+  openGraph={{
+    url: "https://petrichor64.app/",
+    title: "Petrichor64 Website",
+    description: "The Petrichor64 game engine official site and documentation",
+    images: [
+      {
+        url: "./p64.png",
+        width: 727,
+        height: 146,
+        alt: "Petrichor64 Logo",
+      },
+    ],
+    site_name: "Petrichor64",
+  }}
+  twitter={{
+    handle: "@MakeAvoy",
+    site: "makeavoy.com",
+    cardType: "summary_large_image",
+    title: "Petrichor64 Website",
+    description: "The Petrichor64 game engine official site and documentation",
+    image: "./p64.png",
+    imageAlt: "Twitter image alt",
+  }}
+/>
 
 <style>
   /* Hide everything above this component. */
