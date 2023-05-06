@@ -103,7 +103,8 @@
 <BottomAppBar
   variant="fixed"
   bind:this={bottomAppBar}
-  style="font-family: dafont"
+  class="bottom-bg"
+  style="font-family: dafont;"
 >
   <Section>
     <!-- <SvelteTooltip tip="Download" top> -->
@@ -149,6 +150,17 @@
   }
   :global(.default-tip) {
     transform: translate(25%, 0);
+  }
+
+  :global(.bottom-bg) {
+    --mdc-theme-secondary: #932f7b;
+    background-image: url("/tile-dark.png");
+  }
+  @media (prefers-color-scheme: light) {
+    :global(.bottom-bg) {
+      --mdc-theme-secondary: #002841;
+      background-image: url("/tile.png");
+    }
   }
   /* :global(.search-icon) {
     background-image: url("./search.png");

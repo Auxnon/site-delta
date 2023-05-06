@@ -43,6 +43,18 @@
     outline: none;
     cursor: pointer;
   }
+
+  :global(.mdc-fab) .picon {
+    filter: invert(1);
+  }
+  @media (prefers-color-scheme: light) {
+    .picon {
+      filter: invert(1);
+    }
+    :global(.mdc-fab) .picon {
+      filter: none;
+    }
+  }
   .search-icon {
     background-image: url("./search.png");
   }
