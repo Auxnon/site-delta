@@ -125,7 +125,7 @@
       <PIcon className={`picon ${expansionStatus}-icon`}>down</PIcon>
     </Fab>
   </Section>
-  {#if !isMobile}
+  {#if isMobile}
     <Section fabInset>
       <Fab aria-label="Toggle Expand" on:click={openInput}>
         <PIcon>search</PIcon>
