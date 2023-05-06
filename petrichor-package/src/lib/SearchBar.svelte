@@ -188,10 +188,15 @@
     left: 10%;
     top: 10%;
     width: 80%;
-    background-color: white;
+    background-color: rgb(232, 232, 232);
     padding: 10px;
     * {
       font-family: "dafont" !important;
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    #foreground {
+      background-color: rgb(21, 21, 21);
     }
   }
   input {
