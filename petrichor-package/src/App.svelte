@@ -90,6 +90,7 @@
   <!-- <link rel="stylesheet" href="node_modules/svelte-material-ui/bare.css" /> -->
 </svelte:head>
 
+<SearchBar on:pick={picked} bind:updateFilters bind:openInput />
 <main>
   <div id="inner-main">
     <Header />
@@ -98,7 +99,6 @@
     </template>
   </div>
 </main>
-<SearchBar on:pick={picked} bind:updateFilters bind:openInput />
 
 <BottomAppBar
   variant="fixed"
