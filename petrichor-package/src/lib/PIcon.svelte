@@ -1,27 +1,15 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { get_current_component } from "svelte/internal";
-
   let comp;
   let data;
   export let className = "picon down-icon";
   let text;
   let tag;
   $: className = `picon ${data?.innerText}-icon`;
-  $: console.log("hiya", data?.innerHTML, tag);
-  const forwardEvents = funcy(get_current_component());
-  function funcy(ev) {
-    // debugger;
-  }
+  // $: console.log("hiya", data?.innerHTML, tag);
   export let use: any = [];
 </script>
 
-<svelte:component
-  this={comp}
-  {tag}
-  use={[forwardEvents, ...use]}
-  class={`${data?.innerText}-icon`}
-/>
+<svelte:component this={comp} {tag} class={`${data?.innerText}-icon`} />
 
 <div class={className} bind:this={data}>
   <slot />

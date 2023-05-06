@@ -13,11 +13,9 @@
   } else {
     // model.keywords.push(["tile"]);
   }
-  //   console.log(hljs.getLanguage("lua").keywords);
   export let lang;
   export let text;
   const html = hljs.highlight("lua", text).value;
-  console.log(html);
 </script>
 
 <pre><code>{@html html}</code></pre>
