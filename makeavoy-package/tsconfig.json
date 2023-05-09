@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+      "sourceMap": true,
+      "jsx": "react",
+      "target": "ES2020",
+      "module": "ESNext",
+      "alwaysStrict": true,
+    }
+
+  }

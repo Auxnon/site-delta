@@ -1,0 +1,407 @@
+import * as THREE from "../lib/three.module";
+import * as Main from "../Main";
+import * as UI from "../UI";
+import "./style/aboutStyle.css";
+import { App } from "../app.type";
+
+//pass in name, and a pointer to a complete function which dictates everything has loaded,
+//we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
+//animate is called every render, deint... not used yet
+export class About extends App {
+  portrait;
+  eye;
+  eyeTimer = 0;
+
+  // non 3d fields
+  main;
+  overlay;
+  resizeTimer;
+  //let px = 0;
+  //let moveTarget;
+  currentSection;
+  clickerOverlay;
+  portfolioHolder;
+  closeButton;
+  holders = [];
+
+  constructor(dom) {
+    super(dom);
+    this.scene = new THREE.Scene();
+    var ambientLight = new THREE.AmbientLight(0xffffff); // soft white light
+    this.scene.add(ambientLight);
+    var sunLight = new THREE.DirectionalLight(0xffffff, 0.6); //DirectionalLight
+    sunLight.position.set(-1, -6, 10);
+    this.scene.add(sunLight);
+    Main.rendererPromise.then((renderer) => {
+      renderer.loadModel("assets/portrait.glb").then((m) => {
+        this.portrait = m;
+        m.position.set(0, 0, -170);
+        m.scale.set(60, 60, 60);
+        // window.portrait = this.portrait;
+        // window.Render = Render;
+        // window.Main = Main;
+
+        //m.rotation.y = -Math.PI / 2 //pi2 to pi
+        this.scene.add(m);
+        this.portrait.children.forEach((c) => {
+          if (c.name == "Eye") this.eye = c;
+        });
+
+        this.checkDone();
+      });
+    });
+    //import( /* webpackChunkName: "App4About" */ './about.html').then(module=>{
+    //  console.log('here')
+    //  console.log(module)
+    // })
+    //require('html-loader!./about.html');
+
+    fetch("./partials/about.html")
+      .then(function (response) {
+        return response.text();
+      })
+      .then((html) => {
+        // This is the HTML from our response as a text string
+
+        dom.insertAdjacentHTML("beforeend", html);
+        /*dom.addEventListener("DOMContentLoaded", function(){
+            console.log('TEST7') //FIX
+        })*/
+        this.initAbout(dom);
+        this.emailFixer(dom);
+        this.checkDone();
+        //console.log(html);
+      })
+      .catch(function (err) {
+        // There was an error
+        console.warn("Something went wrong.", err);
+      });
+
+    return this.scene;
+  }
+
+  animate(delta: number) {
+    if (this.portrait) {
+      let pos = Main.system.getPosPercent();
+      this.portrait.rotation.y = (-0.25 + pos.x / 2.0) * Math.PI;
+      this.portrait.rotation.x = (0.375 + pos.y / 6.0) * Math.PI;
+      if (this.eye) {
+        this.eyeTimer++;
+        if (this.eyeTimer > 200 && this.eyeTimer < 220) {
+          let v;
+          if (this.eyeTimer > 210) v = (this.eyeTimer - 210) / 10;
+          else v = 1 - (this.eyeTimer - 200) / 10;
+          this.eye.scale.set(1, v, 1);
+        } else if (this.eyeTimer >= 220) this.eyeTimer = 0;
+      }
+    }
+  }
+
+  deinit() {}
+
+  open(canvas) {
+    //main.querySelector()
+    Main.system.shrinkTitle();
+
+    //console.log('opened')
+    //UI.systemMessage('test ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
+    if (this.main) {
+      let holder = this.main.querySelector(".portrait-holder");
+      canvas.custom = 256;
+      holder.appendChild(canvas);
+      Main.getRenderer()?.resize();
+    }
+
+    this.hideOverlay();
+    setTimeout(() => {
+      if (this.main) {
+        this.main.style.display = "initial";
+        this.fit();
+        void this.main.offsetWidth;
+        this.main.style.opacity = 1;
+        setTimeout(() => {
+          this.unhideOverlay();
+        }, 900);
+      }
+    }, 100);
+    return true;
+  }
+
+  checkDone() {
+    if (this.main && this.portrait) this.resolver();
+  }
+
+  close() {
+    if (this.main) {
+      this.hideOverlay();
+      this.main.style.opacity = 0;
+      setTimeout(() => {
+        this.main.style.display = "none";
+      }, 200);
+      Main.getRenderer()?.resize();
+      this.closeAll();
+    }
+  }
+
+  ///==========non 3d page logic===========
+
+  initAbout(dom) {
+    this.main = dom.querySelector("main");
+    let underlay = this.main.querySelector(".portfolio-underlay");
+    this.overlay = this.main.querySelector(".portfolio-overlay");
+    this.clickerOverlay = this.main.querySelector(".portfolio-clicker");
+
+    let contactPanel = underlay.firstElementChild;
+
+    this.main.querySelectorAll("section").forEach((section, i) => {
+      let holder = document.createElement("div");
+      holder.className = "section-holder";
+      holder.id = "portfolio-section-holder" + i;
+      this.holders.push(holder);
+      section.id = "portfolio-section" + i;
+      underlay.insertBefore(holder, contactPanel);
+      section.tabIndex = i;
+      //holder.appendChild(section)
+      section.holderId = i;
+
+      section.className = "shrink";
+      //section.remove();
+
+      section.addEventListener("focus", (ev) => {
+        this.selectSection(ev.target);
+      });
+
+      section.addEventListener("click", (ev) => {
+        this.selectSection(section);
+      });
+      let image = section.querySelector("image");
+      if (image) image.addEventListener("load", this.loadListener);
+
+      let video = section.querySelector("video");
+      if (video) video.addEventListener("loadeddata", this.loadListener);
+
+      /*
+        section.addEventListener('pointerdown',ev=>{
+            moveTarget=section
+            px=ev.clientX
+        })
+        window.addEventListener('pointerup',ev=>{
+            //if(moveTarget)
+
+            moveTarget=null;
+
+        })
+
+        section.addEventListener('pointermove',ev=>{
+            if(moveTarget && moveTarget==section){
+                let x=ev.clientX
+
+                let vx=x-px;
+                console.log(vx)
+                px=x;
+                if(Math.abs(vx)>20)
+                    closeAll();
+            }
+        })*/
+
+      /*
+        //maybe this isnt a good idea after all
+        section.addEventListener('scroll', ev=>{
+            let element = event.target;
+            if (element.scrollHeight - element.scrollTop === element.clientHeight)
+            {
+                console.log('bottom');
+                if(section.nextElementSibling==null)
+                    selectSection( section.parentElement.firstElementChild)
+                else
+                    selectSection( section.nextElementSibling)
+            }
+        });*/
+    });
+    this.clickerOverlay.addEventListener("click", this.closeAll);
+    this.closeButton = this.main.querySelector("#close-button");
+    if (this.closeButton)
+      this.closeButton.addEventListener("click", this.closeAll);
+
+    let chatter = this.main.querySelector(".chat-link");
+    if (chatter)
+      chatter.addEventListener("click", (ev) => {
+        Main.system.switchApp("chat"); //chat id
+      });
+
+    setTimeout(() => {
+      this.fit();
+    }, 1); //make sure DOM is done
+    let portraitHolder = this.main.querySelector(".portrait-holder");
+    this.portfolioHolder = this.main.querySelector(".portfolio-section-block");
+    this.portfolioHolder.addEventListener("scroll", (ev) => {
+      if (ev.target.scrollTop > 0) {
+        portraitHolder.style.height = "128px";
+        portraitHolder.style.transform = "translate(-50%) scale(0.5,0.5)";
+        //portfolioHolder.style.height='calc(100% - 128px)'
+      } else {
+        portraitHolder.style.height = "";
+        portraitHolder.style.transform = "";
+        //portfolioHolder.style.height=''
+      }
+    });
+    window.addEventListener("keydown", (ev) => {
+      /*if(ev.which==32)
+            fit();*/
+      console.log(ev.which);
+
+      if (this.currentSection) {
+        if (ev.which == 27) {
+          this.closeAll();
+        } else if (ev.which == 37) {
+          //left
+          if (
+            this.currentSection.previousElementSibling == null ||
+            this.currentSection.previousElementSibling == this.clickerOverlay
+          )
+            this.selectSection(
+              this.currentSection.parentElement.lastElementChild
+            );
+          else this.selectSection(this.currentSection.previousElementSibling);
+        } else if (ev.which == 39) {
+          //right //|| ev.which == 32
+          if (this.currentSection.nextElementSibling == null)
+            this.selectSection(this.currentSection.parentElement.children[1]);
+          else this.selectSection(this.currentSection.nextElementSibling);
+        }
+      } else if (ev.which == 27 || ev.which == 39) {
+        //ev.which == 32
+        this.selectSection(this.main.querySelector("section"));
+      }
+    });
+    window.addEventListener("resize", (ev) => {
+      //DEV FIX we shouldn't have an internal listener, that's just asking for trouble
+      if (this.resizeTimer) clearTimeout(this.resizeTimer);
+      this.resizeTimer = setTimeout(() => {
+        this.unhideOverlay();
+      }, 200);
+      this.hideOverlay();
+    });
+  }
+
+  selectSection(section) {
+    if (section) {
+      this.shrinkAll();
+
+      let vid = section.querySelector("video");
+      if (vid) vid.play();
+
+      this.portfolioHolder.style.overflowY = "hidden";
+      section.className = "";
+      section.style.left = "50%";
+      this.closeButton.style.display = "block";
+      section.addEventListener("scroll", this.sectionScrollChecker);
+      let sHeight = section.parentElement.parentElement.scrollTop;
+      let height = window.innerHeight; //section.parentElement.parentElement.offsetHeight
+      //UI.systemMessage('sheight'+sHeight+' height '+height,'warn')
+      section.style.top =
+        height / 2 + sHeight - section.parentElement.offsetTop - 64 + "px";
+      section.focus();
+
+      this.currentSection = section;
+      this.clickerOverlay.classList.add("clicker-active");
+      setTimeout(this.fit, 1);
+    } else this.closeAll();
+  }
+
+  fit() {
+    this.main.querySelectorAll("section").forEach((section, i) => {
+      this.fitSection(section);
+    });
+    this.clickerOverlay.style.zIndex = 2;
+  }
+
+  fitSection(section) {
+    section.scrollTo(0, 0);
+    if (section.className == "shrink") {
+      let holder = this.holders[section.holderId];
+      section.style.left =
+        holder.offsetLeft + 128 - section.offsetWidth / 2 + "px";
+      section.style.top = holder.offsetTop + "px";
+      section.style.zIndex = 0;
+    } else section.style.zIndex = 3;
+  }
+
+  loadListener(ev) {
+    this.fitSection(ev.target.parentElement);
+    if (ev.target["videoHeight"] == undefined)
+      ev.target.removeEventListener("load", this.loadListener);
+    else ev.target.removeEventListener("loadeddata", this.loadListener);
+    console.log("late load");
+  }
+
+  shrinkAll() {
+    this.main.querySelectorAll("section").forEach((s) => {
+      if (s.className != "shrink") {
+        s.className = "shrink";
+        s.removeEventListener("scroll", this.sectionScrollChecker);
+        let vid = s.querySelector("video");
+        if (vid) vid.pause();
+      }
+    });
+  }
+
+  closeAll() {
+    this.shrinkAll();
+
+    this.portfolioHolder.style.overflowY = "";
+    this.currentSection = null;
+    this.clickerOverlay.classList.remove("clicker-active");
+    this.closeButton.style.display = "";
+    setTimeout(this.fit, 1);
+  }
+
+  hideOverlay() {
+    this.overlay.style.opacity = 0;
+  }
+
+  unhideOverlay() {
+    this.fit();
+    this.overlay.style.opacity = 1;
+  }
+
+  emailFixer(dom) {
+    let fixerInterval;
+
+    let emailButton = dom.querySelector(".mail-link");
+
+    function emailButtonOverride(ev) {
+      const string = "CWa[Wleo6]cW_b$Yec"; // crappy obfuscation
+
+      let array = string.split("");
+
+      //if(ev.originalEvent !== undefined){
+      UI.systemMessage("Fixing email (Anti-Spam)", "success");
+
+      let counter = 0;
+      fixerInterval = setInterval(() => {
+        let shiftedArray = array.map((val, i) => {
+          return String.fromCharCode(val.charCodeAt(i) + counter);
+        });
+        let newString = shiftedArray.join("");
+        emailButton.innerText = newString; //''+Math.floor(Math.random()*Math.pow(10,18));
+        counter++;
+        if (counter > 10) {
+          clearInterval(fixerInterval);
+          emailButton.removeEventListener("click", emailButtonOverride);
+          emailButton.href = "mailto:" + newString;
+        }
+      }, 200);
+
+      //}
+      ev.preventDefault();
+      return false;
+    }
+
+    emailButton.addEventListener("click", emailButtonOverride);
+  }
+
+  sectionScrollChecker(ev) {
+    console.log("scroll" + ev.target.scrollTop);
+  }
+}

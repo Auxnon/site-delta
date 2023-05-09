@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "devDependencies": {
+    "@types/three": "^0.150.1",
     "clean-webpack-plugin": "^4.0.0",
     "css-loader": "^6.7.3",
     "html-webpack-plugin": "^5.5.0",
@@ -28,6 +29,5 @@
   "bugs": {
     "url": "https://github.com/Auxnon/site-delta/issues"
   },
-  "homepage": "https://github.com/Auxnon/site-delta#readme",
-  "dependencies": {}
+  "homepage": "https://github.com/Auxnon/site-delta#readme"
 }
