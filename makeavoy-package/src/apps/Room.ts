@@ -1,14 +1,14 @@
 import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
-import { App } from "../app.type";
+import App from "../types/App";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
 //animate is called every render, deint... not used yet
 
 //called at first run, plugs in all the goods
-export class Room extends App {
+export default class Room extends App {
   group;
   plane;
   targetNode;
@@ -147,7 +147,7 @@ export class Room extends App {
     this.group.rotation.z += delta / 1.0;
     if (this.group.rotation.z > Math.PI) this.group.rotation.z = -Math.PI;
 
-    let pos = Main.system.getPosPercent();
+    let pos = Main.systemInstance.getPosPercent();
     this.sunLight.target.position.set(pos.x * 100 - 50, pos.y * 10 - 5, 0);
     this.targetNode.position.set(pos.x * 10 - 5, pos.y * 10 - 5, -2);
 
@@ -209,10 +209,12 @@ export class Room extends App {
       canvas.width = width;
       canvas.height = height;
       let context = canvas.getContext("2d");
-      (canvas.style.position = "absolute"), (canvas.style.left = "0px");
-      canvas.style.top = "0px";
-      canvas.style.transform = "scale(10,10)";
-      context.drawImage(image, 0, 0, width, height);
+      if (context) {
+        (canvas.style.position = "absolute"), (canvas.style.left = "0px");
+        canvas.style.top = "0px";
+        canvas.style.transform = "scale(10,10)";
+        context.drawImage(image, 0, 0, width, height);
+      }
       dom.appendChild(canvas);
     };
     fetch("assets/room/check.svg")
@@ -265,7 +267,7 @@ export class Room extends App {
 
         let d: string;
         if (!og[k]) {
-          d = path.getAttribute("d");
+          d = path.getAttribute("d") || "";
           og[k] = d;
         } else {
           d = og[k];

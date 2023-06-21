@@ -1,6 +1,7 @@
 import * as Main from "./Main";
-import { APP_HASHES, APP_MODULES } from "./Main";
-import { App, AppShell } from "./app.type";
+import { APP_IDS, APP_MODULES } from "./Main";
+import { init } from "./RasterTool";
+import AppShell from "./types/AppShell";
 
 export class System {
   currentApp: AppShell | undefined;
@@ -9,7 +10,7 @@ export class System {
   positionalData = { x: 0, y: 0 };
   targetMove: AppShell | undefined = undefined;
   targetPoint = { x: 0, y: 0 };
-  resizeDebouncer: NodeJS.Timeout;
+  resizeDebouncer: number | undefined;
   svg: SVGSVGElement;
   // focused: HTMLElement | undefined;
   barMoveFactor = 0;
@@ -29,20 +30,16 @@ export class System {
   mainTitle: HTMLElement;
   appFreeSortMode = false;
 
-  constructor(public appShells: AppShell[]) {
-    window.addEventListener("resize", this.resize);
-    window.addEventListener("orientationchange", this.resize);
-    window.addEventListener("pointermove", this.mousemove);
-    window.addEventListener("pointerdown", this.mousemove);
-    window.addEventListener("pointerup", this.winMouseUp);
-    this.svg = document.querySelector("svg");
+  constructor() {
+    this.svg = document.querySelector("svg") as SVGSVGElement;
     // this.appElements = Array.from(document.querySelectorAll(".app"));
     this.path = document.querySelector("path");
-    this.mainTitle = document.querySelector("#main-title");
+    this.mainTitle = document.querySelector("#main-title") as HTMLElement;
     this.mouseObj = { x: window.document.body.offsetWidth / 2, y: -200 };
-    this.mainTitle.addEventListener("click", (ev) => {
-      this.closeApp();
-    });
+  }
+
+  init(apps: AppShell[]) {
+    this.appList = apps;
     this.initLine();
     this.barInit();
     this.sortButtonInit();
@@ -52,8 +49,17 @@ export class System {
     setInterval(() => {
       this.boundaryCheck();
     }, 10000);
+    window.addEventListener("resize", () => this.resize());
+    window.addEventListener("orientationchange", () => this.resize);
+    window.addEventListener("pointermove", (ev) => this.mousemove(ev));
+    window.addEventListener("pointerdown", (ev) => this.mousemove(ev));
+    window.addEventListener("pointerup", (ev) => this.winMouseUp(ev));
+    this.mainTitle.addEventListener("click", (ev) => {
+      this.closeApp();
+    });
   }
-  mousemove(ev) {
+
+  mousemove(ev: PointerEvent) {
     this.positionalData = {
       x: ev.clientX / document.body.offsetWidth,
       y: ev.clientY / document.body.offsetHeight,
@@ -107,7 +113,7 @@ export class System {
     }
   }
 
-  winMouseUp(ev) {
+  winMouseUp(ev: PointerEvent) {
     if (this.barMove) {
       this.barMove = false;
       this.barLineFactor = 1;
@@ -147,7 +153,7 @@ export class System {
 
   resize() {
     clearTimeout(this.resizeDebouncer);
-    this.resizeDebouncer = setTimeout(() => {
+    this.resizeDebouncer = window.setTimeout(() => {
       this.svg.setAttribute("width", document.body.offsetWidth + "px");
       this.svg.setAttribute("height", document.body.offsetHeight + "px");
       this.barAdjust();
@@ -235,7 +241,7 @@ export class System {
       }
     }
 
-    requestAnimationFrame(this.animate);
+    requestAnimationFrame(() => this.animate);
   }
 
   appSelect(app: AppShell, ev: PointerEvent) {
@@ -285,9 +291,9 @@ export class System {
   }
 
   barInit() {
-    this.appHome = document.querySelector("#app-center");
-    this.bar = document.querySelector("#bar");
-    this.barHandle = document.querySelector("#barHandle");
+    this.appHome = document.querySelector("#app-center") as HTMLElement;
+    this.bar = document.querySelector("#bar") as HTMLElement;
+    this.barHandle = document.querySelector("#barHandle") as HTMLElement;
     this.barHandle.addEventListener("pointerdown", (ev) => {
       let xx = this.barBox.left; //-(barBox.right-barBox.left)/2
       let yy = this.barBox.top; //-(barBox.bottom-barBox.top)/2
@@ -504,7 +510,7 @@ export class System {
     }
   }
 
-  pendApp(id) {
+  pendApp(id: number) {
     let app = this.appList[id];
     app.pend();
   }
@@ -513,18 +519,18 @@ export class System {
     this.closeApp(true);
     let id = 0;
     if (typeof iid === "string") {
-      id = APP_HASHES[iid];
+      id = APP_IDS[iid];
       if (iid == undefined) return;
     } else {
       id = iid;
     }
     this.openApp(id);
-    let ar = Object.keys(APP_HASHES);
+    let ar = Object.keys(APP_IDS);
     let hashString = ar[id - 1]; //as we offset our app ids to start at 1, new arrays need id -1
     if (hashString) window.location.hash = "#" + hashString;
   }
 
-  barMoveHandler(ev) {
+  barMoveHandler(ev: PointerEvent) {
     if (this.barMove) {
       this.barMoveFactor++;
       let xx = ev.clientX;
@@ -615,14 +621,15 @@ export class System {
 
   brightnessButtonInit() {
     let brightness = document.querySelector("#brightness");
-    brightness.addEventListener("click", (ev) => {
-      if (brightness.classList.contains("brightness--dark")) {
-        document.body.classList.add("dark-mode");
-      } else {
-        document.body.classList.remove("dark-mode");
-      }
-      brightness.classList.toggle("brightness--dark");
-    });
+    if (brightness) {
+      brightness.addEventListener("click", (ev) => {
+        if (!brightness?.classList.toggle("brightness--dark")) {
+          document.body.classList.add("dark-mode");
+        } else {
+          document.body.classList.remove("dark-mode");
+        }
+      });
+    }
   }
 
   async openApp(id: number) {
@@ -630,7 +637,7 @@ export class System {
     if (!app) return;
     app.max();
     if (!app.instance) {
-      app.p;
+      // app.p;
       const mod = await APP_MODULES[id];
       // @ts-ignore
       app.instance = new mod();

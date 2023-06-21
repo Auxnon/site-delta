@@ -1,9 +1,9 @@
-import * as THREE from "../lib/three.module";
+import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
-import { App } from "../app.type";
+import App from "../types/App";
 
-export class Punk extends App {
+export default class Punk extends App {
   skull: THREE.Group;
   aniFactor = 0;
   speed = 20;
@@ -27,7 +27,7 @@ export class Punk extends App {
     sunLight.target = sunTarget;
 
     Main.rendererPromise.then((renderer) => {
-      renderer.loadModel("assets/skull.glb").then((m) => {
+      renderer.loadModel("assets/models/skull.glb").then((m) => {
         this.skull = m;
         m.position.set(0, 160, 70);
         m.scale.set(6, 6, 6);
@@ -39,16 +39,16 @@ export class Punk extends App {
       this.group = new THREE.Group();
 
       let streetMesh = new THREE.Mesh(
-        new THREE.BoxBufferGeometry(2, 6, 0.1),
+        new THREE.BoxGeometry(2, 6, 0.1),
         new THREE.MeshStandardMaterial({ color: 0xebd7fe })
       );
 
       let lamp1 = new THREE.Mesh(
-        new THREE.BoxBufferGeometry(2, 2, 12),
+        new THREE.BoxGeometry(2, 2, 12),
         new THREE.MeshStandardMaterial({ color: 0xfda3a8 })
       );
       let lamp2 = new THREE.Mesh(
-        new THREE.BoxBufferGeometry(8, 4, 1),
+        new THREE.BoxGeometry(8, 4, 1),
         new THREE.MeshStandardMaterial({ color: 0xfda3a8 })
       );
       let lamp = new THREE.Group();
@@ -90,7 +90,7 @@ export class Punk extends App {
 
             let high = 20 + Math.random() * 88;
             let cube = new THREE.Mesh(
-              new THREE.BoxBufferGeometry(26, 26, high),
+              new THREE.BoxGeometry(26, 26, high),
               mats[Math.floor(Math.random() * 3)]
             );
             cube.position.set((j - 2) * 40, 0, -20 + high / 2);
@@ -98,7 +98,7 @@ export class Punk extends App {
           }
       }
       let road = new THREE.Mesh(
-        new THREE.BoxBufferGeometry(44, 32 * 40, 0.2),
+        new THREE.BoxGeometry(44, 32 * 40, 0.2),
         new THREE.MeshStandardMaterial({ color: 0x791bc6 })
       );
       road.position.set(0, 16 * 40 - 200, -20);
@@ -156,7 +156,7 @@ export class Punk extends App {
       this.skull.rotation.z =
         ((-Math.PI / 8) * (50 - Math.abs(this.aniFactor - 50))) / 50;
 
-      let pos = Main.system.getPosPercent();
+      let pos = Main.systemInstance.getPosPercent();
       this.group.position.x = pos.x * 32 - 16;
       this.group.position.z = -(1 - pos.y) * 20;
 

@@ -1,43 +1,9 @@
-import * as THREE from "./lib/three.module.js";
-import * as Render from "./Render.js";
-import { system } from "./Main";
+import App from "./App";
+import { systemInstance } from "../Main.js";
 
-//pass in name, and a pointer to a complete function which dictates everything has loaded,
-//we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
-//animate is called every render, deint... not used yet
-
-export class App {
-  id = 0;
-  // offset: { x: number; y: number };
-  container: number;
-  sizeOverride?: { width: number; height: number };
-  scene: THREE.Scene;
-  /** Use to set app as fully loaded, use completed field for promise */
-  resolver: (a?: any) => void;
-  completed = new Promise((resolve) => {
-    this.resolver = resolve;
-  });
-  constructor(public element: HTMLElement) {}
-  //called at first run, plugs in all the goods
-  init(index, dom, complete) {}
-
-  //runs every frame
-  animate(delta) {}
-
-  //unused for now, would deload everything for memory reasons
-  deinit() {}
-
-  //called when toggled to this app, on a page load with app ideally it would run init and immediately run open after
-  //also passes in the canvas in case the app wants to do something wacky with it like resize it or place it somewhere else
-  //return true if changes were made and it wont follow the default
-  open(canvas) {}
-  //called when app is closed out for another one
-  close() {}
-  adjust(amount: number) {}
-}
-
-export class AppShell {
+export default class AppShell {
   instance?: App;
+  instanceLoaded: boolean = false;
   active: boolean = false;
   isMoving: boolean = false;
   /** offset the cursor has from the element origin */
@@ -49,11 +15,32 @@ export class AppShell {
   constructor(
     public element: HTMLElement,
     public id: number,
-    public instanceClass: string
+    public instanceClass: string,
+    moduleLoader: Promise<any>
   ) {
     this.containerId = this.id > 5 ? 1 : 0;
     this.element.style.top = Math.random() * document.body.offsetWidth + "px";
     this.element.style.left = Math.random() * document.body.offsetHeight + "px";
+    this.element.addEventListener("pointerdown", (ev) => {
+      systemInstance.appSelect(this, ev);
+    });
+    this.element.addEventListener("dragstart", (ev) => {
+      ev.preventDefault();
+    });
+    moduleLoader.then((module) => {
+      // module
+      const app: App = new module.default(this.element);
+      if (app instanceof App) {
+        this.instance = app;
+        this.instanceLoaded = true;
+      }
+      // const app: App = Object.create(module); ////window[instanceClass].prototype);
+      // app.constructor.apply(app, element);
+      // if (app && app instanceof App) {
+      //   this.instance = app;
+      //   this.instanceLoaded = true;
+      // }
+    });
   }
 
   select(cursorX: number, cursorY: number) {
@@ -64,12 +51,7 @@ export class AppShell {
     this.offset = { x: this.pos.x - cursorX, y: this.pos.y - cursorY };
     this.element.classList.add("appMove");
     this.isMoving = false;
-    this.element.addEventListener("pointerdown", (ev) => {
-      system.appSelect(this, ev);
-    });
-    this.element.addEventListener("dragstart", (ev) => {
-      ev.preventDefault();
-    });
+
     this.element.style.zIndex = `${this.id > 5 ? -1 : 1}`;
   }
   max() {

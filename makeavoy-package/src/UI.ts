@@ -187,7 +187,7 @@ function addConfetti(x, y, angle) {
   setTimeout(function () {
     con.remove();
   }, 500);
-  mainDom.appendChild(con);
+  mainDom?.appendChild(con);
 }
 
 function styleInit() {

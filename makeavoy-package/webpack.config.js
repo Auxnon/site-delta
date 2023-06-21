@@ -3,32 +3,32 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const SitemapPlugin = require("sitemap-webpack-plugin").default;
 
-const paths = [
-  {
-    path: "/svg/",
-    lastmod: "2019-01-01",
-    priority: 0.8,
-    changefreq: "yearly",
-  },
-  {
-    path: "/desk/",
-    lastmod: "2018-02-05",
-    priority: 0.5,
-    changefreq: "yearly",
-  },
-  {
-    path: "/fruit/",
-    lastmod: "2018-02-05",
-    priority: 0.5,
-    changefreq: "never",
-  },
-  {
-    path: "/stomp/",
-    lastmod: "2014-01-01",
-    priority: 0.5,
-    changefreq: "never",
-  },
-];
+// const paths = [
+//   {
+//     path: "/svg/",
+//     lastmod: "2019-01-01",
+//     priority: 0.8,
+//     changefreq: "yearly",
+//   },
+//   {
+//     path: "/desk/",
+//     lastmod: "2018-02-05",
+//     priority: 0.5,
+//     changefreq: "yearly",
+//   },
+//   {
+//     path: "/fruit/",
+//     lastmod: "2018-02-05",
+//     priority: 0.5,
+//     changefreq: "never",
+//   },
+//   {
+//     path: "/stomp/",
+//     lastmod: "2014-01-01",
+//     priority: 0.5,
+//     changefreq: "never",
+//   },
+// ];
 
 module.exports = (env, argv) => {
   let devMode = argv.mode !== "production";
@@ -36,7 +36,7 @@ module.exports = (env, argv) => {
 
   return {
     mode: "production", //'production',
-    entry: "./src/Main.js",
+    entry: "./src/Main.ts",
     plugins: [
       new CleanWebpackPlugin({
         dry: false,
@@ -59,17 +59,35 @@ module.exports = (env, argv) => {
         filename: "partials/about.html",
         template: "./src/about.html",
       }),
-      new SitemapPlugin({
-        base: "https://MakeAvoy.com",
-        paths,
-        options: { lastmod: true },
-      }),
+      // new SitemapPlugin({
+      //   base: "https://MakeAvoy.com",
+      //   paths,
+      //   options: { lastmod: true },
+      // }),
     ],
+    resolve: {
+      extensions: [".ts", ".tsx", ".js"],
+      // Add support for TypeScripts fully qualified ESM imports.
+      extensionAlias: {
+        ".js": [".js", ".ts"],
+        ".cjs": [".cjs", ".cts"],
+        ".mjs": [".mjs", ".mts"],
+      },
+    },
     module: {
       rules: [
         {
           test: /\.css$/,
           use: ["style-loader", "css-loader"],
+        },
+        {
+          test: /\.ts?$/,
+          use: "ts-loader",
+          exclude: /node_modules/,
+        },
+        {
+          test: /\.(jpe?g|gif|png|svg|woff|ttf|wav|mp3)$/,
+          type: "asset/resource",
         },
       ],
     },
@@ -94,7 +112,7 @@ module.exports = (env, argv) => {
           },
 
           apps: {
-            test: /[\\/]App[\\/]/,
+            test: /apps\/[\\/]/,
             name(module) {
               const packageName = module.context.match(
                 /[\\/]App[\\/](.*?)([\\/]|$)/
@@ -102,6 +120,22 @@ module.exports = (env, argv) => {
               return packageName;
             },
           },
+        },
+      },
+    },
+    devtool: devMode ? "eval-source-map" : false,
+    devServer: {
+      static: {
+        directory: path.join(__dirname, "../makeavoy-dist/"),
+      },
+      compress: true,
+      port: 9000,
+      proxy: {
+        "/assets": {
+          target: "http://192.168.1.42:9001",
+          secure: false,
+          changeOrigin: true,
+          pathRewrite: { "^/assets": "" },
         },
       },
     },

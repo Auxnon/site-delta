@@ -3,207 +3,202 @@ A simple image editor for the chat system from the SocialGame project
 **/
 
 function init(dom) {
+  initSheet();
+  main = document.createElement("div");
+  main.className = ".drawer-group";
 
-    initSheet();
-    main = document.createElement('div')
-    main.className = '.drawer-group';
+  drawer = main.querySelector(".drawer");
 
-    drawer = main.querySelector('.drawer')
+  drawer.setAttribute("width", "32px"); //drawer.offsetWidth+'px')
+  drawer.setAttribute("height", "32px"); //drawer.offsetHeight+'px')
+  drawer.addEventListener("pointerdown", pointerdown);
+  drawer.addEventListener("pointermove", pointermove);
+  window.addEventListener("pointerup", pointerup);
+  ctx = drawer.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
 
-    drawer.setAttribute('width', '32px'); //drawer.offsetWidth+'px')
-    drawer.setAttribute('height', '32px'); //drawer.offsetHeight+'px')
-    drawer.addEventListener('pointerdown', pointerdown)
-    drawer.addEventListener('pointermove', pointermove)
-    window.addEventListener('pointerup', pointerup)
-    ctx = drawer.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+  let topper = main.querySelector(".drawer-top");
+  let p1 = d("drawer-paint");
+  p1.style.backgroundColor = "black";
+  p1.addEventListener("pointerup", paintChange);
+  let p2 = d("drawer-paint");
+  p2.style.backgroundColor = "red";
+  p2.addEventListener("pointerup", paintChange);
+  let p3 = d("drawer-paint");
+  p3.style.backgroundColor = "#65BB00";
+  p3.addEventListener("pointerup", paintChange);
+  let p4 = d("drawer-paint");
+  p4.style.backgroundColor = "white";
+  p4.addEventListener("pointerup", paintChange);
 
+  let download = d("drawer-download");
+  download.addEventListener("pointerup", downloadImage);
+  let trash = d("drawer-trash");
+  trash.addEventListener("pointerup", trashImage);
+  topper.appendChild(p1);
+  topper.appendChild(p2);
+  topper.appendChild(p3);
+  topper.appendChild(p4);
+  topper.appendChild(download);
+  topper.appendChild(trash);
 
-    let topper = main.querySelector('.drawer-top')
-    let p1 = d('drawer-paint')
-    p1.style.backgroundColor = 'black'
-    p1.addEventListener('pointerup', paintChange)
-    let p2 = d('drawer-paint')
-    p2.style.backgroundColor = 'red'
-    p2.addEventListener('pointerup', paintChange)
-    let p3 = d('drawer-paint')
-    p3.style.backgroundColor = '#65BB00'
-    p3.addEventListener('pointerup', paintChange)
-    let p4 = d('drawer-paint')
-    p4.style.backgroundColor = 'white'
-    p4.addEventListener('pointerup', paintChange)
+  document.onpaste = function (event) {
+    //@ts-ignore
+    var items = (event.clipboardData || event.originalEvent.clipboardData)
+      .items;
+    console.log(JSON.stringify(items)); // will give you the mime types
+    let index;
+    for (index in items) {
+      var item = items[index];
+      if (item.kind === "file") {
+        var blob = item.getAsFile();
+        var reader = new FileReader();
+        reader.onload = function (event) {
+          var img = new Image();
+          img.onload = function () {
+            setData(img);
+          };
+          img.src = `${event.target?.result}`;
+        }; // data url!
 
-    let download = d('drawer-download')
-    download.addEventListener('pointerup', downloadImage)
-    let trash = d('drawer-trash')
-    trash.addEventListener('pointerup', trashImage)
-    topper.appendChild(p1)
-    topper.appendChild(p2)
-    topper.appendChild(p3)
-    topper.appendChild(p4)
-    topper.appendChild(download)
-    topper.appendChild(trash)
-
-
-
-    document.onpaste = function(event) {
-        var items = (event.clipboardData || event.originalEvent.clipboardData).items;
-        console.log(JSON.stringify(items)); // will give you the mime types
-        let index;
-        for (index in items) {
-            var item = items[index];
-            if (item.kind === 'file') {
-                var blob = item.getAsFile();
-                var reader = new FileReader();
-                reader.onload = function(event) {
-                    var img = new Image;
-                    img.onload = function() {
-                        setData(img)
-                    };
-                    img.src = event.target.result;
-                }; // data url!
-
-                reader.readAsDataURL(blob);
-            }
-        }
+        reader.readAsDataURL(blob);
+      }
     }
-
+  };
 }
 
 var down = false;
 var ctx;
-var paintColor = 'black';
+var paintColor = "black";
 var main;
-var drawer
+var drawer;
 var state;
 
 function pointerdown() {
-    down = true;
+  down = true;
 }
 
 function pointermove(ev) {
-    if (down) {
-        ctx.fillStyle = paintColor;
-        let rect = ev.target.getBoundingClientRect();
+  if (down) {
+    ctx.fillStyle = paintColor;
+    let rect = ev.target.getBoundingClientRect();
 
-        ctx.fillRect(32 * (ev.clientX - rect.left) / 132, 32 * (ev.clientY - rect.top) / 132, 2, 2);
-    }
+    ctx.fillRect(
+      (32 * (ev.clientX - rect.left)) / 132,
+      (32 * (ev.clientY - rect.top)) / 132,
+      2,
+      2
+    );
+  }
 }
 
 function pointerup(ev) {
-    down = false;
+  down = false;
 }
 
 function trashImage(ev) {
-    wiggle(ev.target)
-    ctx.fillStyle = "rgba(255, 255, 255, 0)";
-    ctx.clearRect(0, 0, 32, 32);
+  wiggle(ev.target);
+  ctx.fillStyle = "rgba(255, 255, 255, 0)";
+  ctx.clearRect(0, 0, 32, 32);
 }
 
 function downloadImage(ev) {
-    wiggle(ev.target)
-    let target = ev.target.parentElement.parentElement.querySelector('.drawer')
-    //let img = convertCanvasToImage(target)
-    let img = target.toDataURL("image/png");
-    downloader(img)
+  wiggle(ev.target);
+  let target = ev.target.parentElement.parentElement.querySelector(".drawer");
+  //let img = convertCanvasToImage(target)
+  let img = target.toDataURL("image/png");
+  downloader(img);
 }
 
 function downloader(img) {
-    let a = document.createElement('a');
-    a.href = img
-    a.download = img //"img";
-    //a.download = img;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  let a = document.createElement("a");
+  a.href = img;
+  a.download = img; //"img";
+  //a.download = img;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function convertCanvasToImage(canvas) {
-    var image = new Image();
-    image.src = canvas.toDataURL("image/png");
-    return image;
+  var image = new Image();
+  image.src = canvas.toDataURL("image/png");
+  return image;
 }
 
 function wiggle(target) {
-    target.style.animationName = '';
-    void target.offsetWidth;
-    target.style.animationName = 'jello';
+  target.style.animationName = "";
+  void target.offsetWidth;
+  target.style.animationName = "jello";
 }
 
 function paintChange(ev) {
-    wiggle(ev.target)
-    paintColor = ev.target.style.backgroundColor;
+  wiggle(ev.target);
+  paintColor = ev.target.style.backgroundColor;
 }
 
 function getData() {
-    return drawer.toDataURL("image/png");
+  return drawer.toDataURL("image/png");
 }
 
 function move(target) {
-    target.appendChild(main)
+  target.appendChild(main);
 }
 
 function setData(img) {
-    ctx.clearRect(0, 0, 32, 32)
-    if (!img.src.includes('undefined')) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0)";
-        ctx.drawImage(img, 0, 0, 32, 32);
-    }
-
+  ctx.clearRect(0, 0, 32, 32);
+  if (!img.src.includes("undefined")) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0)";
+    ctx.drawImage(img, 0, 0, 32, 32);
+  }
 }
 
 function d(c) {
-    let dom = document.createElement('div')
-    if (c)
-        dom.className = c;
-    return dom
+  let dom = document.createElement("div");
+  if (c) dom.className = c;
+  return dom;
 }
 
 function makeButton(target, status, callback) {
-    let dom = d('drawer-opener')
-    dom.setAttribute('status', status)
-    dom.addEventListener('click', ev => {
+  let dom = d("drawer-opener");
+  dom.setAttribute("status", status);
+  dom.addEventListener("click", (ev) => {
+    let group = target.querySelector(".drawer-group");
+    if (group && group.style.display == "initial") {
+      group.style.display = "none";
+      state = undefined;
+      if (callback) callback(false);
+    } else {
+      main.style.display = "initial";
+      if (ev.target) state = (ev.target as any).getAttribute("status"); //TODO
+      if (state == "character") {
+        main.style.left = "-72px";
+        main.style.top = "64px";
+      } else {
+        main.style.top = "-100px";
+        main.style.left = "50%";
+      }
 
-        let group = target.querySelector('.drawer-group')
-        if (group && group.style.display == 'initial') {
-            group.style.display = 'none'
-            state = undefined;
-            if (callback)
-                callback(false);
-        } else {
-            main.style.display = 'initial'
-            state = ev.target.getAttribute('status')
-            if (state == 'character') {
-                main.style.left = '-72px'
-                main.style.top = '64px'
-            } else {
-                main.style.top = '-100px';
-                main.style.left = '50%';
-            }
-
-            target.appendChild(main)
-            if (callback)
-                callback(true);
-        }
-    })
-    target.appendChild(dom);
-    return dom;
+      target.appendChild(main);
+      if (callback) callback(true);
+    }
+  });
+  target.appendChild(dom);
+  return dom;
 }
 
 function getState() {
-    return state;
+  return state;
 }
 
 function close() {
-    main.style.display = 'none'
-    state = undefined;
+  main.style.display = "none";
+  state = undefined;
 }
 
-
-
 function initSheet() {
-    var sheet = document.createElement('style')
-    sheet.innerHTML = `
+  var sheet = document.createElement("style");
+  sheet.innerHTML = `
 .drawer-group{
     position: absolute;
     top: -204px;
@@ -273,8 +268,7 @@ width: 156px;
     height 64px;
 }
 `;
-    document.body.appendChild(sheet)
+  document.body.appendChild(sheet);
 }
 
-
-export { init, makeButton, getState, getData, setData, close }
+export { init, makeButton, getState, getData, setData, close };

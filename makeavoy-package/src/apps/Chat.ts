@@ -1,16 +1,16 @@
-import * as Online from "../Online";
+// import * as Online from "../Online";
 import * as Helper from "../Helper";
-import { system } from "../Main";
+import { systemInstance } from "../Main";
 import * as THREE from "../lib/three.module";
 
-import "./style/chatStyle.css";
-import { App } from "../app.type";
+import "../style/chatStyle.css";
+import App from "../types/App";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
 //animate is called every render, deint... not used yet
 
-export class Chat extends App {
+export default class Chat extends App {
   chatWrapper; //holds all chat app elements, not the canvas as usual
   chatPane: HTMLElement; //holds only actual chat bubbles
   //let chatBlock;
@@ -32,9 +32,9 @@ export class Chat extends App {
     super(dom);
     //let scene = new THREE.Scene();
 
-    system.shrinkTitle();
+    systemInstance.shrinkTitle();
     this.initChat(dom);
-    Online.guest();
+    // Online.guest();
     //return scene;
     this.resolver();
   }
@@ -55,7 +55,7 @@ export class Chat extends App {
   //also passes in the canvas in case the app wants to do something wacky with it like resize it or place it somewhere else
   //return true if changes were made and it wont follow the default
   open(canvas) {
-    system.shrinkTitle();
+    systemInstance.shrinkTitle();
     //if(chatInput)
     this.chatWrapper.style.display = "";
     this.chatInput.focus();
@@ -171,7 +171,7 @@ export class Chat extends App {
     this.loginMenu.appendChild(pass);
     this.loginMenu.appendChild(passButton);
     passButton.addEventListener("click", (ev) => {
-      Online.login(name.value, pass.value);
+      // Online.login(name.value, pass.value);
       this.loginMenu.style.display = "";
     });
     this.roomSwitcher = this.div("room-switcher");
@@ -193,7 +193,7 @@ export class Chat extends App {
     this.roomDeleter.style.display = "none";
     this.roomDeleter.addEventListener("click", (ev) => {
       this.wiggleElement(ev.target);
-      Online.deleteRoom();
+      // Online.deleteRoom();
     });
     mainDom.appendChild(this.roomDeleter);
     this.chatWrapper.appendChild(this.roomHider);
@@ -262,8 +262,8 @@ export class Chat extends App {
     let chatRow = document.createElement("div");
     chatRow.classList.add("chat-row");
 
-    if (player.username == Online.getUsername())
-      chatRow.classList.add("chat-right");
+    // if (player.username == Online.getUsername())
+    //   chatRow.classList.add("chat-right");
 
     chatBubble.classList.add("chat-bubble");
 
@@ -273,10 +273,10 @@ export class Chat extends App {
     chatTime.setAttribute("time", timestamp);
     if (this.lastPlayerName && this.lastPlayerName == player.username) {
       if (this.pastPlayerName == player.username) {
-        this.lastDom.classList.remove("chat-bubble-footer");
-        this.lastDom.classList.add("chat-bubble-body");
+        // this.lastDom.classList.remove("chat-bubble-footer");
+        // this.lastDom.classList.add("chat-bubble-body");
       } else {
-        this.lastDom.classList.add("chat-bubble-header");
+        // this.lastDom.classList.add("chat-bubble-header");
       }
       //lastDom.classList.remove("chatBubbleHeader","chatBubbleBody")
 
@@ -286,8 +286,8 @@ export class Chat extends App {
       nameTag.classList.add("chat-nametag");
       nameTag.innerText = player.username;
       let tagRow = document.createElement("div");
-      if (player.username == Online.getUsername())
-        tagRow.style.textAlign = "right";
+      // if (player.username == Online.getUsername())
+      //   tagRow.style.textAlign = "right";
       //nameTag.style.background=color;
       tagRow.appendChild(nameTag);
       this.chatPane.appendChild(tagRow);
@@ -295,16 +295,16 @@ export class Chat extends App {
 
     this.pastDom = this.lastDom;
     this.pastPlayerName = this.lastPlayerName;
-    this.lastDom = chatBubble;
+    // this.lastDom = chatBubble;
     this.lastPlayerName = player.username;
 
-    if (player.username == Online.getUsername()) {
-      chatRow.appendChild(chatTime);
-      chatRow.appendChild(chatBubble);
-    } else {
-      chatRow.appendChild(chatBubble);
-      chatRow.appendChild(chatTime);
-    }
+    // if (player.username == Online.getUsername()) {
+    //   chatRow.appendChild(chatTime);
+    //   chatRow.appendChild(chatBubble);
+    // } else {
+    //   chatRow.appendChild(chatBubble);
+    //   chatRow.appendChild(chatTime);
+    // }
 
     this.chatPane.appendChild(chatRow);
     this.chatPane.scrollTo(0, this.chatPane.scrollHeight);
@@ -321,7 +321,7 @@ export class Chat extends App {
             Drawer.close();
         }*/
       message += this.chatInput.value;
-      Online.message(message);
+      // Online.message(message);
       this.chatInput.value = "";
     }
   }
@@ -426,7 +426,7 @@ function setSize(bool) {
 
   roomClick(ev) {
     let t = ev.target.innerText;
-    if (t != "???") Online.switchRoom(t);
+    // if (t != "???") Online.switchRoom(t);
   }
 
   clear() {
@@ -461,10 +461,10 @@ function setSize(bool) {
   }
 
   refreshTimestamps() {
-    let stamps = this.chatPane.querySelectorAll(".chat-timestamp");
-    stamps.forEach((stamp: HTMLElement) => {
-      let n = parseInt(stamp.getAttribute("time"));
-      if (!isNaN(n)) stamp.innerText = this.timeFormat(n);
-    });
+    // let stamps = this.chatPane.querySelectorAll(".chat-timestamp");
+    // stamps.forEach((stamp: HTMLElement) => {
+    //   let n = parseInt(stamp.getAttribute("time"));
+    //   if (!isNaN(n)) stamp.innerText = this.timeFormat(n);
+    // });
   }
 }

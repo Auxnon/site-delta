@@ -1,13 +1,13 @@
-import * as THREE from "../lib/three.module";
+import * as THREE from "three";
 import * as Main from "../Main";
 import * as UI from "../UI";
-import "./style/aboutStyle.css";
-import { App } from "../app.type";
+import "../style/aboutStyle.css";
+import App from "../types/App";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
 //animate is called every render, deint... not used yet
-export class About extends App {
+export default class About extends App {
   portrait;
   eye;
   eyeTimer = 0;
@@ -22,7 +22,7 @@ export class About extends App {
   clickerOverlay;
   portfolioHolder;
   closeButton;
-  holders = [];
+  holders: HTMLElement[] = [];
 
   constructor(dom) {
     super(dom);
@@ -33,7 +33,7 @@ export class About extends App {
     sunLight.position.set(-1, -6, 10);
     this.scene.add(sunLight);
     Main.rendererPromise.then((renderer) => {
-      renderer.loadModel("assets/portrait.glb").then((m) => {
+      renderer.loadModel("assets/models/portrait.glb").then((m) => {
         this.portrait = m;
         m.position.set(0, 0, -170);
         m.scale.set(60, 60, 60);
@@ -76,13 +76,11 @@ export class About extends App {
         // There was an error
         console.warn("Something went wrong.", err);
       });
-
-    return this.scene;
   }
 
   animate(delta: number) {
     if (this.portrait) {
-      let pos = Main.system.getPosPercent();
+      let pos = Main.systemInstance.getPosPercent();
       this.portrait.rotation.y = (-0.25 + pos.x / 2.0) * Math.PI;
       this.portrait.rotation.x = (0.375 + pos.y / 6.0) * Math.PI;
       if (this.eye) {
@@ -101,7 +99,7 @@ export class About extends App {
 
   open(canvas) {
     //main.querySelector()
-    Main.system.shrinkTitle();
+    Main.systemInstance.shrinkTitle();
 
     //console.log('opened')
     //UI.systemMessage('test ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
@@ -174,11 +172,12 @@ export class About extends App {
       section.addEventListener("click", (ev) => {
         this.selectSection(section);
       });
-      let image = section.querySelector("image");
-      if (image) image.addEventListener("load", this.loadListener);
+      const image = section.querySelector("image");
+      if (image) image.addEventListener("load", (ev) => this.loadListener(ev));
 
       let video = section.querySelector("video");
-      if (video) video.addEventListener("loadeddata", this.loadListener);
+      if (video)
+        video.addEventListener("loadeddata", (ev) => this.loadListener(ev));
 
       /*
         section.addEventListener('pointerdown',ev=>{
@@ -226,7 +225,7 @@ export class About extends App {
     let chatter = this.main.querySelector(".chat-link");
     if (chatter)
       chatter.addEventListener("click", (ev) => {
-        Main.system.switchApp("chat"); //chat id
+        Main.systemInstance.switchApp("chat"); //chat id
       });
 
     setTimeout(() => {

@@ -1,16 +1,16 @@
-import * as THREE from "../lib/three.module";
+// import * as THREE from "../lib/three.module";
+import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
 import * as Helper from "../Helper";
-import { App } from "../app.type";
+import App from "../types/App";
 
 let shapes;
 let groupMove;
 let groupPivot;
 
-let barGroups = [];
-
-export class Data extends App {
+export default class Data extends App {
+  barGroups: THREE.Group[] = [];
   constructor(dom) {
     super(dom);
     this.initStyle();
@@ -59,6 +59,7 @@ export class Data extends App {
     groupMove = new THREE.Group();
     groupPivot = new THREE.Group();
     let ambientLight = new THREE.AmbientLight(0xffffff); // soft white light
+    // this.scene.
     this.scene.add(ambientLight);
     let sunLight = new THREE.DirectionalLight(0xffffff, 0.6); //DirectionalLight
     sunLight.position.set(0, 1, 0);
@@ -111,7 +112,7 @@ export class Data extends App {
     //barGraph([Math.log(2),Math.log(4),Math.log(6),Math.log(8),Math.log(10),Math.log(12),Math.log(14)],scene,new THREE.Vector3(0,40,0))
     this.resolver();
 
-    return this.scene;
+    // return this.scene;
   }
 
   animate(delta) {
@@ -119,8 +120,8 @@ export class Data extends App {
       c.rotation.x = Math.PI / 2;
       c.rotation.y += delta * 2;
     });
-    let pos = Main.system.getPosPercent();
-    let max = barGroups.length * 40;
+    let pos = Main.systemInstance.getPosPercent();
+    let max = this.barGroups.length * 40;
 
     groupMove.position.y -= (pos.y - 0.5) * 8;
     if (groupMove.position.y > -40) {
@@ -149,7 +150,7 @@ export class Data extends App {
     if (!offset) offset = new THREE.Vector3(0, 0, 0);
 
     let factor = 80 / data.length;
-    let geo = new THREE.BoxBufferGeometry(1, 1, 1); //factor / 2
+    let geo = new THREE.BoxGeometry(1, 1, 1); //factor / 2
     let lowColor = 0x6a00fe;
     let highColor = 0xd53229;
     let lowRGB = Helper.hexToRGB(lowColor);
@@ -201,10 +202,10 @@ export class Data extends App {
       barGroup.add(cube);
       //}
     }
-    barGroups.push(barGroup);
-    if (barGroups.length > 10) scene.remove(barGroups.shift());
-    barGroups.forEach((g, i) => {
-      g.position.y = (barGroups.length - i) * 40;
+    this.barGroups.push(barGroup);
+    if (this.barGroups.length > 10) scene.remove(this.barGroups.shift());
+    this.barGroups.forEach((g, i) => {
+      g.position.y = (this.barGroups.length - i) * 40;
     });
 
     scene.add(barGroup);

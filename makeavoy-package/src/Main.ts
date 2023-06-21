@@ -1,29 +1,31 @@
 import * as UI from "./UI";
-import { App, AppShell } from "./app.type";
 import "./style/mainStyle.css";
 import { Renderer } from "./Render";
 import { System } from "./System";
+import AppShell from "./types/AppShell";
+import Shaper from "./Shaper";
 
 /*CSS classes used
 
 #brightness
 .brightness--dark
 */
+export let systemInstance: System = new System();
 
 //We could have technically done imports as a variable input to the Render class import statement
 //But webpack won't convert the chunk parameters correctly unless it's explicitly within an import statement
 export const APP_MODULES = [
   undefined,
-  import(/* webpackChunkName: "App1SkyIsland" */ "./apps/Skyland"),
-  import(/* webpackChunkName: "App2Punk" */ "./apps/Punk"),
-  import(/* webpackChunkName: "App3Data" */ "./apps/Data"),
-  import(/* webpackChunkName: "App4About" */ "./apps/About"),
-  import(/* webpackChunkName: "App5Chat" */ "./apps/Chat"),
+  import(/* webpackChunkName: "SkylandApp" */ "./apps/Skyland"),
+  import(/* webpackChunkName: "PunkApp" */ "./apps/Punk"),
+  import(/* webpackChunkName: "DataApp" */ "./apps/Data"),
+  import(/* webpackChunkName: "AboutApp" */ "./apps/About"),
+  import(/* webpackChunkName: "ChatApps" */ "./apps/Chat"),
   undefined,
   import(/* webpackChunkName: "App7Room" */ "./apps/Room"),
 ];
-//for now we need all these filled with some kind of data, no undefineds
-export const APP_HASHES = {
+
+export const APP_IDS = {
   sky: 1,
   punk: 2,
   data: 3,
@@ -52,8 +54,6 @@ export const rendererPromise = import(
 //doms
 let apps: AppShell[];
 
-export let system: System;
-
 let pendingRenderId; //if not undefined, wait for Render to load and then apply the scene
 
 let currentAppId = -1;
@@ -71,45 +71,54 @@ window.TAU = Math.PI * 2;
   window.UI = UI;
   let preApps = document.querySelectorAll(".app");
   apps = [];
-  preApps.forEach((element) => {
+  let assets: string[] = [];
+  preApps.forEach((element, key) => {
     let html = element as HTMLElement;
     //convert out of a nodelist to an array, it matters trust me
     let i = parseInt(element.id.replace("app", ""));
     let className = "";
+    let asset = "";
     switch (i) {
       case 1:
         className = "Skyland";
+        asset = require("./assets/home.png");
         break;
       case 2:
         className = "Punk";
+        asset = require("./assets/skull.png");
         break;
       case 3:
         className = "Data";
+        asset = require("./assets/data.png");
         break;
       case 4:
         className = "About";
+        asset = require("./assets/about.png");
         break;
       case 5:
         className = "Chat";
+        asset = require("./assets/chat.png");
         break;
       case 7:
         className = "Room";
+        asset = require("./assets/room.png");
         break;
     }
-    const shell: AppShell = new AppShell(html, i, className);
+    let module = APP_MODULES[i];
+    if (module !== undefined) {
+      const shell: AppShell = new AppShell(html, i, className, module);
 
-    // const app:App = Object.create(window[className].prototype);
-    // app.constructor.apply(app, new Array("World"));
-    // if (app && app instanceof App) apps[i] = app;
-    apps[i] = shell;
+      apps[i] = shell;
+      assets[key] = asset;
+    }
   });
 
-  system = new System(apps);
+  systemInstance.init(apps);
 
   if (window.location.hash.length) {
     let st = window.location.hash.substring(1);
-    let id = APP_HASHES[st];
-    if (id != undefined) system.openApp(id);
+    let id = APP_IDS[st];
+    if (id != undefined) systemInstance.openApp(id);
   }
   // button.onclick = e => import(/* webpackChunkName: "print" */ './print').then(module => {
   //     const print = module.default;
@@ -118,6 +127,7 @@ window.TAU = Math.PI * 2;
   //   });
 
   UI.init(document.body, 4);
+  Shaper(Array.from(preApps).map((e, i) => [e as HTMLElement, assets[i]]));
 })();
 
 // function openAppApplyRender(id, app) {

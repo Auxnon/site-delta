@@ -1,18 +1,18 @@
-import * as THREE from "../lib/three.module";
+import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
-import { App } from "../app.type";
+import App from "../types/App";
 
 let greenModel;
 
-export class Skyland extends App {
+export default class Skyland extends App {
   value: number = 0;
   dir: number = 1;
   constructor(dom) {
     super(dom);
     let scene = new THREE.Scene();
     Main.rendererPromise.then((renderer) => {
-      renderer.loadModel("assets/island.glb").then((m) => {
+      renderer.loadModel("assets/models/island.glb").then((m) => {
         greenModel = m;
         greenModel.position.set(0, 260, -40);
         greenModel.scale.set(10, 10, 10);
@@ -52,7 +52,7 @@ export class Skyland extends App {
       }
       greenModel.rotation.y = 5.4 + this.value * 0.6; //5.2 - 6
       //m.position.set(0,260,-40)
-      let pos = Main.system.getPosPercent();
+      let pos = Main.systemInstance.getPosPercent();
       greenModel.position.set(
         30 - 30 * this.value + (pos.x - 0.2) * 30,
         -80 + 340 * this.value,
