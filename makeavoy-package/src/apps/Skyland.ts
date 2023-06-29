@@ -1,16 +1,17 @@
 import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
-import App from "../types/App";
+import AppEnvironment from "../types/AppEnvironment";
 
 let greenModel;
 
-export default class Skyland extends App {
+export default class Skyland extends AppEnvironment {
   value: number = 0;
   dir: number = 1;
-  constructor(dom) {
-    super(dom);
+  constructor(dom: HTMLElement, id: number) {
+    super(dom, id);
     let scene = new THREE.Scene();
+
     Main.rendererPromise.then((renderer) => {
       renderer.loadModel("assets/models/island.glb").then((m) => {
         greenModel = m;
@@ -40,6 +41,7 @@ export default class Skyland extends App {
       scene.add(sunTarget);
       sunLight.target = sunTarget;
     }
+    this.scene = scene;
 
     // return scene;
   }

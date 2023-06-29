@@ -1,16 +1,15 @@
 import * as Main from "./Main";
-import { APP_IDS, APP_MODULES } from "./Main";
+import { APP_IDS, APPS } from "./Main";
 import { init } from "./RasterTool";
+import AppEnvironment from "./types/AppEnvironment";
 import AppShell from "./types/AppShell";
 
 export class System {
-  currentApp: AppShell | undefined;
-  appList: AppShell[] = [];
-  // appElements: HTMLElement[] = [];
+  currentApp?: AppShell;
   positionalData = { x: 0, y: 0 };
-  targetMove: AppShell | undefined = undefined;
+  targetMove?: AppShell = undefined;
   targetPoint = { x: 0, y: 0 };
-  resizeDebouncer: number | undefined;
+  resizeDebouncer?: number;
   svg: SVGSVGElement;
   // focused: HTMLElement | undefined;
   barMoveFactor = 0;
@@ -38,8 +37,7 @@ export class System {
     this.mouseObj = { x: window.document.body.offsetWidth / 2, y: -200 };
   }
 
-  init(apps: AppShell[]) {
-    this.appList = apps;
+  init() {
     this.initLine();
     this.barInit();
     this.sortButtonInit();
@@ -158,10 +156,11 @@ export class System {
       this.svg.setAttribute("height", document.body.offsetHeight + "px");
       this.barAdjust();
 
-      Main.getRenderer()?.resize();
+      Main.rendererPromise.then((r) => r.resize());
       //UI.systemMessage('inner ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
     }, 250);
   }
+
   animate() {
     if (this.barLineFactor > -1) {
       if (this.barLineFactor < 4) {
@@ -241,7 +240,7 @@ export class System {
       }
     }
 
-    requestAnimationFrame(() => this.animate);
+    requestAnimationFrame(() => this.animate());
   }
 
   appSelect(app: AppShell, ev: PointerEvent) {
@@ -252,12 +251,12 @@ export class System {
     }
   }
 
-  clearPendApp(id: number, canvas?: HTMLCanvasElement) {
-    this.appList[id]?.clearPend(canvas);
-  }
+  // clearPendApp(id: number, canvas?: HTMLCanvasElement) {
+  //   APPS[id]?.clearPend(canvas);
+  // }
 
   boundaryCheck() {
-    this.appList.forEach((app) => {
+    APPS.forEach((app) => {
       if (app && !app.active) {
         const ele = app.element;
         let rect = ele.getBoundingClientRect();
@@ -333,13 +332,13 @@ export class System {
   }
 
   barCalculate(notate?: boolean) {
-    //first determine  how many apps will be visably part of the app bar
+    //first determine  how many apps will be visibly part of the app bar
     let count = 0;
     let appsInRow: AppShell[] = [];
     let appsInHome: AppShell[] = [];
     let sideWays = this.barPos == 0 || this.barPos == 2;
 
-    this.appList.forEach((app) => {
+    APPS.forEach((app) => {
       if (app) {
         if (app.containerId == 0) {
           appsInRow.push(app);
@@ -441,7 +440,7 @@ export class System {
   }
 
   adjustApps(amount: number) {
-    this.appList.forEach((app) => {
+    APPS.forEach((app) => {
       if (app && app.active) {
         app.adjust(amount);
       }
@@ -511,12 +510,11 @@ export class System {
   }
 
   pendApp(id: number) {
-    let app = this.appList[id];
-    app.pend();
+    APPS[id]?.pend();
   }
 
   switchApp(iid: number | string) {
-    this.closeApp(true);
+    this.closeApp();
     let id = 0;
     if (typeof iid === "string") {
       id = APP_IDS[iid];
@@ -633,53 +631,25 @@ export class System {
   }
 
   async openApp(id: number) {
-    let app = this.appList[id];
+    const app = APPS[id];
     if (!app) return;
-    app.max();
-    if (!app.instance) {
-      // app.p;
-      const mod = await APP_MODULES[id];
-      // @ts-ignore
-      app.instance = new mod();
-      debugger;
-    }
-    // TODO
-    // openAppApplyRender
 
-    // currentAppId = id;
-    // let app = appElements[id];
-    // if (app) {
-    //   app.style.zIndex = 0;
-    //   if (Render) {
-    //     openAppApplyRender(id, app);
-    //   } else {
-    //     pendingRenderId = id;
-    //     pendApp(id);
-    //   }
-    //   focused = app;
-    // }
+    app.max();
+    app.pend();
+
+    app.instancePromise.then((instance) => {
+      if (instance instanceof AppEnvironment) {
+        Main.rendererPromise.then((r) => r.setApp(app, instance));
+      }
+    });
+    this.currentApp = app;
   }
 
-  closeApp(disableFade?: boolean) {
-    //   if (this.currentApp) {
-    //     this.currentApp;
-    //     this.focused.classList.remove("app-max");
-    //     if (this.focused.container == 1) this.focused.style.zIndex = -1;
-    //     else this.focused.style.zIndex = 1;
-    //     this.focused.focused = undefined; //wow why did i name this like this
-    //     window.history.pushState({}, "", "/");
-    //     if (Render) {
-    //       Render.closeModule(); //the loaded script is loaded in the Render class, yucky but it handles all the lazy loading for models so it worked out
-    //       if (!disableFade) {
-    //         let d = Render.getAlphaCanvas();
-    //         setTimeout(() => {
-    //           d.style.opacity = 0;
-    //         }, 1);
-    //         d.style.opacity = 1;
-    //       }
-    //     }
-    //   }
-    //   this.mainTitle.classList.remove("shrink");
-    //   currentAppId = 0;
+  closeApp() {
+    this.currentApp?.close();
+    window.history.pushState({}, "", "/");
+
+    this.mainTitle.classList.remove("shrink");
+    // this.currentAppId = 0;
   }
 }

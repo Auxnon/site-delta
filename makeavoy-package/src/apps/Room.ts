@@ -1,14 +1,15 @@
 import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
-import App from "../types/App";
+import AppEnvironment from "../types/AppEnvironment";
 
+const TAU = Math.PI * 2;
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
 //animate is called every render, deint... not used yet
 
 //called at first run, plugs in all the goods
-export default class Room extends App {
+export default class Room extends AppEnvironment {
   group;
   plane;
   targetNode;
@@ -23,7 +24,8 @@ export default class Room extends App {
   offsets = [0, 0.2, 0.4, 0.6, 0.8, -0.8, -0.6, -0.4];
   current = 0;
 
-  init(dom, complete) {
+  constructor(dom: HTMLElement, id: number) {
+    super(dom, id);
     (this.zMatrix = new THREE.Quaternion()),
       (this.xMatrix = new THREE.Quaternion());
     this.xMatrix.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
@@ -97,50 +99,50 @@ export default class Room extends App {
       transparent: true,
     });
     let planeGeo = new THREE.PlaneGeometry(2, 3);
-    // TODO
-    // planeGeo.faceVertexUvs[0].forEach((ar) => {
-    //   ar.forEach((v) => {
-    //     if (v.x == 1) v.x = 0.2;
-    //   });
-    // });
+    const uvs = planeGeo.attributes.uv;
+    for (let i = 0; i < uvs.count; i++) {
+      // @ts-ignore this is valid!
+      if (uvs.getX(i) == 1) uvs.setX(i, 0.2);
+    }
+
     this.plane = new THREE.Mesh(planeGeo, doubleMat);
     this.plane.position.set(0, -3, -0.25);
-    this.plane.rotation.set(window.TAU / 4, 0, 0);
+    this.plane.rotation.set(TAU / 4, 0, 0);
     this.group.add(this.plane);
 
     Main.rendererPromise.then((renderer) => {
+      let count = 0;
       renderer.loadModel("assets/room/couch.glb").then((m) => {
-        //=.children[0]
         m.position.set(0, -3, -2.5);
-        m.rotation.set(0, 0, window.TAU / 2);
+        m.rotation.set(0, 0, TAU / 2);
         m.traverse((o) => {
           if (o instanceof THREE.Mesh) {
             o.material = new THREE.MeshPhongMaterial({ color: 0xff274b });
           }
         });
-
         m.castShadow = true;
         m.receiveShadow = true;
-
         this.group.add(m);
+
+        count++;
+        if (count > 1) this.resolver();
       });
 
       renderer.loadModel("assets/room/tv.glb").then((m) => {
-        //=.children[0]
         m.position.set(0, 4, -2.5);
-        //m.rotation.set(0,0,TAU/2)
-        //window.m=m;
         m.castShadow = true;
         m.receiveShadow = true;
         this.group.add(m);
+
+        count++;
+        if (count > 1) this.resolver();
       });
     });
 
     scene.add(this.group);
     dom.style.stroke = "none";
-    let svg = this.convertSVG(null, dom);
-    complete();
-    return scene;
+    // let svg = this.convertSVG(null, dom);
+    this.scene = scene;
   }
 
   animate(delta) {
@@ -161,7 +163,7 @@ export default class Room extends App {
     this.plane.quaternion.copy(this.zMatrix);
     //plane.rotation.x=TAU/4
     //plane.rotation.y=0;
-    let degree = window.TAU / this.offsets.length / 2;
+    let degree = TAU / this.offsets.length / 2;
     let z = this.group.rotation.z;
 
     //z=(z > 0 ? z : (TAU + z))+degree
@@ -191,7 +193,7 @@ export default class Room extends App {
   //called when toggled to this app, on a page load with app ideally it would run init and immediately run open after
   //also passes in the canvas in case the app wants to do something wacky with it like resize it or place it somewhere else
   //return true if changes were made and it wont follow the default
-  open(canvas) {}
+  open() {}
   //called when app is closed out for another one
   close() {}
 
@@ -201,8 +203,8 @@ export default class Room extends App {
     let blob=new Blob([svg.outerHTML],{type: 'image/svg+xml;charset=utf-8'});
     let url=;//window.URL || window.webkitURL || window;
     let blobURL = URL.createObjectURL(blob);*/
-    let width = 64,
-      height = 64;
+    let width = 64;
+    let height = 64;
     let image = new Image();
     image.onload = () => {
       let canvas = document.createElement("canvas");
@@ -217,35 +219,18 @@ export default class Room extends App {
       }
       dom.appendChild(canvas);
     };
-    fetch("assets/room/check.svg")
-      .then((response) => response.text())
-      .then((svgString) => {
-        //let outty=dom.insertAdjacentHTML("afterbegin", svg)
-        const fragment = document
-          .createRange()
-          .createContextualFragment(svgString);
-        let svg = fragment.children[0] as HTMLElement;
-        this.topper(svg);
-        this.svgProcess(svg);
-        dom.appendChild(svg);
-        //document.getElementById('parent').appendChild(fragment);
-        /*
 
-            let { w, h } = svg.getBBox();
-            width = w;
-            height = h;
-            let svg2 = fragment.cloneNode(true);
-            let blob = new Blob([svg2.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
-            let url = window.URL || window.webkitURL || window;
-            let blobURL = URL.createObjectURL(blob);
-            image.src = blobURL;
-
-*/
-      });
-    /*
-
-        image.src='assets/room/check.svg';//blobURL;
-        dom.appendChild(image)*/
+    // fetch("assets/room/check.svg")
+    //   .then((response) => response.text())
+    //   .then((svgString) => {
+    //     const fragment = document
+    //       .createRange()
+    //       .createContextualFragment(svgString);
+    //     let svg = fragment.children[0] as HTMLElement;
+    //     this.topper(svg);
+    //     this.svgProcess(svg);
+    //     dom.appendChild(svg);
+    //   });
   }
 
   topper(ele: HTMLElement) {

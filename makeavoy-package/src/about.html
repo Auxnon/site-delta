@@ -10,7 +10,7 @@
                 <div class="contact-panel-center">
                     <a href="" class="mail-link">Email</a>
                     <hr class="vertical">
-                    <button class="chat-link">Message</button>
+                    <button style="opacity: 0.25; cursor:not-allowed;" class="chat-link"><s>Message</s></button>
                 </div>
             </div>
         </div>
@@ -20,8 +20,19 @@
                 <img src="./assets/connectreport.png"></img>
                 <article>
                     <h2>ConnectReport</h2>
-                    <p>ConnectReport was the first major project I worked on. This small company brought me on as technical support and quality assurance. However due to the small team, I was quickly upgraded to a minor development role. I converted the griding system to SVG which accommodated for the abstract cell sizing, as well as optimizing some neighboring cell collision detection. Allowing for Internet Explorer compatibility meant predating ECMA6 so Babel was a necessity. It Also required working with various APIs in order to generate compatible files and allowing for import/export. I Worked with Node.js, AngularJS and a team oriented git environment. </p>
+                    <p>ConnectReport is the largest scaled application I've worked on. Brought on as a product engineer, I quickly worked with the entire scope of the project, including backend and frontend. I built a freeform grid system, cell snapping and table alignment in the absence of a true sheets-mode. I oversaw a gradual conversion of old ES 2015 code into modern typescript webpack application. The majority of the product code was undocumented so I undertook the task of documenting everything in sight. SOme swathes of code were rewritten just to support intellisense due to the reliance of AngularJS. In addition to devops tasks to correct CI issues, I also created a series of web components to work with other data platforms like QlikSense, Big Query, Databricks, Snowflake, etc. </p>
                     <a href="https://connectreport.com/" class="site-link"></a>
+                </article>
+            </section>
+            <section>
+                <video src="./assets/petlogo.mp4#t=0.001" muted loop playsinline preload="=metadata"></video>
+                <article>
+                    <h2>Petrichor64</h2>
+                    <p>An ambitious project intended to create a retro game engine/fantasy console like the 5th generation of game consoles. Back when 3D was fresh and polygonal and sound synthesis was cheap and limited. The constraints similar to fantasy consoles like PICO-8 or TIC-80 offer developers restricted sandbox environment which forces creative solutions to implement desired game projects. Although not as limited due to using a full 3D renderer built using the <a href="https://wgpu.rs/">WGPU</a> graphics API, the goal is for the Lua scripting layer to allow anyone to quickly make interesting 3D games and applications that run anywhere </p>
+                    <p> In addition to cross platform and music synthesis, the system features easy asset loading, 3D tiling system that doubles as a 2D system if desired, fast drawing rasters that can be used as textures for sprites or 3d models. Models can be built inline via the mod command, or loaded in as gltf/glb files. The full CLI in-engine allows quick building, loading, and bundling game projects </p>
+                    <p>This project is ongoing since early 2019 and has many features still in the work. Currently a lua interpreter is being built from scratch so as to allow for compiling to wasm32-unknown-unknown targets, and this make the engine web-compatible</p>
+                    <a href="https://makeavoy.itch.io/petrichor64" class="site-link"></a>
+                    <a href="https://github.com/Auxnon/petrichor-games" class="code-link"></a>
                 </article>
             </section>
             <section>
@@ -30,17 +41,27 @@
                     <h2>Makeavoy</h2>
                     <p>This site, Makeavoy.com, utilizes all of my favorite techniques I've picked up over the years. It's a little experimental as it's exploring what's possible for a single page application, so don't be surprised if the source is a little bit sloppy! There's a lot going on under the hood so I'm going to break it down here...</p>
                     <h2>Backend</h2>
-                    <p>I primarily use node.js for it's approachable nature coming from a front-end background.
-                        Vhost and express.js take care of the subdomain routing so I can easily incorporate multiple projects and easily separate <abbr title="Progressive Web App">PWA</abbr> manifests. Socket.io trivializes the WebSocket for chat communications and rapid status updates. Although I also utilize a physics server for another experimental project i just call <a href="https://dev.makeavoy.com">Social Game</a>. There's also MariaDB and SQLite3 databases for testing user authentication. After that, the various projects are separated by folders and sub modules to keep things organized. It's all rolled out on my locally hosted Ubuntu server. It was Arch Linux but I opted for something a little more mainstream for maintenance reasons :)
+                    <p> Originally using node.js with vhost in express.js to allow multiple domains on the same server, it's since been moved over to a rust built axum/tower server that serves either MakeAvoy.com or Petrichor64.app depending on the hostname provided.
+                         Socket.io was originally used for WebSockets and currently a rust alternative is WIP. There's also MariaDB and SQLite3 databases for testing user authentication. After that, various projects are separated by folders and sub modules to keep things organized. It's all rolled out on my locally hosted Ubuntu server.
                     </p>
                     <h2>FrontEnd</h2>
                     <p>
-                        The main site utilizes a lot of 3D via Three.js. Due to the above average script sizes, everything is lazy loaded on demand in order to reduce the Time to Interaction. The Rendering system is triggered to load at runtime, while each additional "app" is loaded upon clicking so as to only load the necessary content, at the cost of some load time. The initial payload hosts the basics such as the 3D CSS loading animation, and the app navigation system. The site loads in a self made SVG title that 'draws' into place by a stroke-dashoffset. It also includes dynamic app button movement and placement ala an iPad, and a snazzy vector based drawing system to animate the navigation bar using perpendicular velocity offsets. The title accommodates for the bar as well. Finally, each app when loaded in applies to Canvas3D the scene contents and animation cycles. Upon swapping apps, the buffer is dumped to an image raster and stealthily swapped in for a clean load out. This is because there can only be one Canvas3D at any given time, so this was a nice hack. Finally hit the top right icon to toggle night mode! All 3D and SVG assets are my own.
+                        The main site utilizes a lot of 3D via Three.js. Due to the above average script sizes, everything is lazy loaded on demand in order to reduce the Time to Interaction. The Rendering system is triggered to load at runtime, while each additional "app" is loaded upon clicking so as to only load the necessary content, at the cost of some load time. The initial payload hosts the basics such as the 3D CSS loading animation, and the app navigation system. The site loads in a self made SVG title that 'draws' into place by a stroke-dashoffset. It also includes dynamic app button movement and placement a la an iPad, and a snazzy vector based drawing system to animate the navigation bar using perpendicular velocity offsets. The title accommodates for the bar as well. Finally, each app when loaded in applies to Canvas3D the scene contents and animation cycles. Upon swapping apps, the buffer is dumped to an image raster and stealthily swapped in. This was done for an old Three.js limitation but is no longer necessary.All 3D and SVG assets are my own.
                     </p>
                     <p>
-                         Currently the main page hosts 5 apps. First two being mostly artistic intent: a floating island landscape, and vapor wave style skull. After that you can try the bar graph generator, try any data range, only real number arrays please! Currently you're in my portfolio app, which is over the top with its adjusting panels, but it does support left, right, spacebar, and escape for some accessibility options. Finally the chat app is a fully functional messaging system that only I can read. It supports infinite rooms for as many guest users want to send me a message, and is capable of saving to logs so I should be able to read them after the fact. I have a lot of one off ideas I want to host on the main page, since it only loads what it needs. Stay Tuned!
+                        Site was originally pure vanilla JS, You can view this <a href="https://github.com/Auxnon/NewWave" >here</a> but was recently converted to a typescript and webpack 5 setup for better upkeep
                     </p>
-                    <a href="https://github.com/Auxnon/NewWave" class="code-link"></a>
+                    <a href="https://github.com/Auxnon/site-delta"  class="code-link"></a>
+                </article>
+            </section>
+            <section>
+                <img src="./assets/petsite.png" alt=""></img>
+                <article>
+                    <h2>Petrichor64 Command Site</h2>
+                    <p>A Svelte built site utilizing markdown dumped from an automated build process on every release of Petrichor64. Markdown is left inline under command implementations via rust macros and composited into a single file and uploaded to server. Site also utilizes a command tag based search bar upon typing or using the search button on mobile.</p>
+                    <p> Code is hosted as a mono repo with backend and makeavoy.com, as they share a common ground</p>
+                    <a href="https://petrichor64.app" class="site-link"></a>
+                    <a href="https://github.com/Auxnon/site-delta/tree/main/petrichor-package" class="code-link"></a>
                 </article>
             </section>
             <section>
@@ -138,7 +159,7 @@
                     </p>
                 </article>
             </section>
-            <section>
+            <!-- <section>
                 <video src="./assets/chicken.mp4#t=0.001" muted loop playsinline preload="=metadata"></video>
                 <article>
                     <h2>WASM (Coming Soon!)</h2>
@@ -146,7 +167,7 @@
                     <a href="https://makeavoy.com/wasm/" class="site-link"></a>
                     <a href="https://github.com/Auxnon/rust-game" class="code-link"></a>
                 </article>
-            </section>
+            </section> -->
             <section>
                 <img src="./assets/interval.jpg"></img>
                 <article>

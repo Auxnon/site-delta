@@ -1,22 +1,21 @@
 // const imHome = require("./assets/home.png");
-export default function init(list: [HTMLElement, any][]) {
-  list.forEach(([element, imageSrc]) => {
-    const img = new Image();
-    img.addEventListener("load", function () {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0, img.width, img.height);
+/** Build an svg icon out of a pixelated image and attach to target element */
+export default function attachIcon(target: HTMLElement, imageSrc: string) {
+  const img = new Image();
+  img.addEventListener("load", () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    ctx.drawImage(img, 0, 0, img.width, img.height);
 
-      if (element) {
-        walker(ctx, img.width, img.height, element);
-      }
-      img.removeEventListener("load", this as any);
-    });
-    img.src = imageSrc;
+    if (target) {
+      walker(ctx, img.width, img.height, target);
+    }
+    img.removeEventListener("load", this as any);
   });
+  img.src = imageSrc;
 }
 
 const lookup = [

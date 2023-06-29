@@ -4,13 +4,13 @@ import { systemInstance } from "../Main";
 import * as THREE from "../lib/three.module";
 
 import "../style/chatStyle.css";
-import App from "../types/App";
+import AppEnvironment from "../types/AppEnvironment";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
 //animate is called every render, deint... not used yet
 
-export default class Chat extends App {
+export default class Chat extends AppEnvironment {
   chatWrapper; //holds all chat app elements, not the canvas as usual
   chatPane: HTMLElement; //holds only actual chat bubbles
   //let chatBlock;
@@ -28,11 +28,10 @@ export default class Chat extends App {
   lastDom = null;
   lastPlayerName = "";
 
-  constructor(dom) {
-    super(dom);
+  constructor(dom: HTMLElement, id: number) {
+    super(dom, id);
     //let scene = new THREE.Scene();
 
-    systemInstance.shrinkTitle();
     this.initChat(dom);
     // Online.guest();
     //return scene;
@@ -54,7 +53,7 @@ export default class Chat extends App {
   //called when toggled to this app, on a page load with app ideally it would run init and immediately run open after
   //also passes in the canvas in case the app wants to do something wacky with it like resize it or place it somewhere else
   //return true if changes were made and it wont follow the default
-  open(canvas) {
+  open() {
     systemInstance.shrinkTitle();
     //if(chatInput)
     this.chatWrapper.style.display = "";

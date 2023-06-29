@@ -12,18 +12,58 @@ import Shaper from "./Shaper";
 */
 export let systemInstance: System = new System();
 
+const main_container: HTMLElement = document.querySelector("#main");
 //We could have technically done imports as a variable input to the Render class import statement
 //But webpack won't convert the chunk parameters correctly unless it's explicitly within an import statement
-export const APP_MODULES = [
-  undefined,
-  import(/* webpackChunkName: "SkylandApp" */ "./apps/Skyland"),
-  import(/* webpackChunkName: "PunkApp" */ "./apps/Punk"),
-  import(/* webpackChunkName: "DataApp" */ "./apps/Data"),
-  import(/* webpackChunkName: "AboutApp" */ "./apps/About"),
-  import(/* webpackChunkName: "ChatApps" */ "./apps/Chat"),
-  undefined,
-  import(/* webpackChunkName: "App7Room" */ "./apps/Room"),
-];
+export const APPS: AppShell[] = [];
+
+APPS[1] = new AppShell(
+  main_container,
+  1,
+  "Skyland",
+  require("./assets/home.png"),
+  import(/* webpackChunkName: "SkylandApp" */ "./apps/Skyland")
+);
+
+APPS[2] = new AppShell(
+  main_container,
+  2,
+  "Punk",
+  require("./assets/skull.png"),
+  import(/* webpackChunkName: "PunkApp" */ "./apps/Punk")
+);
+
+APPS[3] = new AppShell(
+  main_container,
+  3,
+  "Data",
+  require("./assets/data.png"),
+  import(/* webpackChunkName: "DataApp" */ "./apps/Data")
+);
+
+APPS[4] = new AppShell(
+  main_container,
+  4,
+  "About",
+  require("./assets/about.png"),
+  import(/* webpackChunkName: "AboutApp" */ "./apps/About")
+);
+
+// APPS[5] = new AppShell(
+//   main_container,
+//   5,
+//   "Chat",
+//   require("./assets/chat.png"),
+//   import(/* webpackChunkName: "ChatApps" */ "./apps/Chat")
+// );
+
+APPS[7] = new AppShell(
+  main_container,
+  7,
+  "Room",
+  require("./assets/room.png"),
+  import(/* webpackChunkName: "App7Room" */ "./apps/Room")
+);
 
 export const APP_IDS = {
   sky: 1,
@@ -35,7 +75,7 @@ export const APP_IDS = {
   room: 7,
 };
 
-let renderer: Renderer | undefined;
+export let renderer: Renderer | undefined;
 export const rendererPromise = import(
   /* webpackChunkName: "Render" */ "./Render"
 ).then((module) => {
@@ -49,71 +89,8 @@ export const rendererPromise = import(
   return renderer;
 });
 
-// const initer = (a: Promise<App>) => a.then((a) => a.init());
-
-//doms
-let apps: AppShell[];
-
-let pendingRenderId; //if not undefined, wait for Render to load and then apply the scene
-
-let currentAppId = -1;
-let appSortingMode = false;
-
-declare global {
-  interface Window {
-    TAU: number;
-    UI: any;
-  }
-}
-window.TAU = Math.PI * 2;
-
 (function init() {
-  window.UI = UI;
-  let preApps = document.querySelectorAll(".app");
-  apps = [];
-  let assets: string[] = [];
-  preApps.forEach((element, key) => {
-    let html = element as HTMLElement;
-    //convert out of a nodelist to an array, it matters trust me
-    let i = parseInt(element.id.replace("app", ""));
-    let className = "";
-    let asset = "";
-    switch (i) {
-      case 1:
-        className = "Skyland";
-        asset = require("./assets/home.png");
-        break;
-      case 2:
-        className = "Punk";
-        asset = require("./assets/skull.png");
-        break;
-      case 3:
-        className = "Data";
-        asset = require("./assets/data.png");
-        break;
-      case 4:
-        className = "About";
-        asset = require("./assets/about.png");
-        break;
-      case 5:
-        className = "Chat";
-        asset = require("./assets/chat.png");
-        break;
-      case 7:
-        className = "Room";
-        asset = require("./assets/room.png");
-        break;
-    }
-    let module = APP_MODULES[i];
-    if (module !== undefined) {
-      const shell: AppShell = new AppShell(html, i, className, module);
-
-      apps[i] = shell;
-      assets[key] = asset;
-    }
-  });
-
-  systemInstance.init(apps);
+  systemInstance.init();
 
   if (window.location.hash.length) {
     let st = window.location.hash.substring(1);
@@ -127,7 +104,6 @@ window.TAU = Math.PI * 2;
   //   });
 
   UI.init(document.body, 4);
-  Shaper(Array.from(preApps).map((e, i) => [e as HTMLElement, assets[i]]));
 })();
 
 // function openAppApplyRender(id, app) {
@@ -197,7 +173,3 @@ function pointCheck(point,index){
                 }
             }
 }*/
-
-export function getRenderer(): Renderer | undefined {
-  return renderer;
-}

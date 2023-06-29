@@ -2,18 +2,18 @@ import * as THREE from "three";
 import * as Main from "../Main";
 import * as UI from "../UI";
 import "../style/aboutStyle.css";
-import App from "../types/App";
+import AppEnvironment from "../types/AppEnvironment";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
 //animate is called every render, deint... not used yet
-export default class About extends App {
+export default class About extends AppEnvironment {
   portrait;
   eye;
   eyeTimer = 0;
 
   // non 3d fields
-  main;
+  main: HTMLElement;
   overlay;
   resizeTimer;
   //let px = 0;
@@ -24,8 +24,8 @@ export default class About extends App {
   closeButton;
   holders: HTMLElement[] = [];
 
-  constructor(dom) {
-    super(dom);
+  constructor(dom: HTMLElement, id: number) {
+    super(dom, id);
     this.scene = new THREE.Scene();
     var ambientLight = new THREE.AmbientLight(0xffffff); // soft white light
     this.scene.add(ambientLight);
@@ -33,22 +33,27 @@ export default class About extends App {
     sunLight.position.set(-1, -6, 10);
     this.scene.add(sunLight);
     Main.rendererPromise.then((renderer) => {
-      renderer.loadModel("assets/models/portrait.glb").then((m) => {
-        this.portrait = m;
-        m.position.set(0, 0, -170);
-        m.scale.set(60, 60, 60);
-        // window.portrait = this.portrait;
-        // window.Render = Render;
-        // window.Main = Main;
+      renderer
+        .loadModel("assets/models/portrait.glb", undefined, undefined, true)
+        .then((m) => {
+          this.portrait = m;
+          m.position.set(0, -175, 96.5);
+          // m.scale.set(60, 60, 60);
+          // window.portrait = this.portrait;
+          // window.Render = Render;
+          // window.Main = Main;
 
-        //m.rotation.y = -Math.PI / 2 //pi2 to pi
-        this.scene.add(m);
-        this.portrait.children.forEach((c) => {
-          if (c.name == "Eye") this.eye = c;
+          //m.rotation.y = -Math.PI / 2 //pi2 to pi
+          this.scene.add(m);
+          this.portrait.children.forEach((c) => {
+            if (c.name == "Eye") this.eye = c;
+          });
+
+          //@ts-ignore
+          window.portrait = this.portrait;
+
+          this.checkDone();
         });
-
-        this.checkDone();
-      });
     });
     //import( /* webpackChunkName: "App4About" */ './about.html').then(module=>{
     //  console.log('here')
@@ -82,7 +87,7 @@ export default class About extends App {
     if (this.portrait) {
       let pos = Main.systemInstance.getPosPercent();
       this.portrait.rotation.y = (-0.25 + pos.x / 2.0) * Math.PI;
-      this.portrait.rotation.x = (0.375 + pos.y / 6.0) * Math.PI;
+      this.portrait.rotation.x = (0.5 + pos.y / 6.0) * Math.PI;
       if (this.eye) {
         this.eyeTimer++;
         if (this.eyeTimer > 200 && this.eyeTimer < 220) {
@@ -97,17 +102,17 @@ export default class About extends App {
 
   deinit() {}
 
-  open(canvas) {
+  open(canvas?: HTMLElement) {
     //main.querySelector()
     Main.systemInstance.shrinkTitle();
 
     //console.log('opened')
     //UI.systemMessage('test ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
-    if (this.main) {
+    if (this.main && canvas) {
       let holder = this.main.querySelector(".portrait-holder");
-      canvas.custom = 256;
+      // canvas.custom = 256;
       holder.appendChild(canvas);
-      Main.getRenderer()?.resize();
+      Main.renderer?.resize();
     }
 
     this.hideOverlay();
@@ -116,7 +121,7 @@ export default class About extends App {
         this.main.style.display = "initial";
         this.fit();
         void this.main.offsetWidth;
-        this.main.style.opacity = 1;
+        this.main.style.opacity = "1";
         setTimeout(() => {
           this.unhideOverlay();
         }, 900);
@@ -126,17 +131,19 @@ export default class About extends App {
   }
 
   checkDone() {
-    if (this.main && this.portrait) this.resolver();
+    if (this.main && this.portrait) {
+      this.resolver();
+    }
   }
 
   close() {
     if (this.main) {
       this.hideOverlay();
-      this.main.style.opacity = 0;
+      this.main.style.opacity = "0";
       setTimeout(() => {
         this.main.style.display = "none";
       }, 200);
-      Main.getRenderer()?.resize();
+      Main.renderer?.resize();
       this.closeAll();
     }
   }
@@ -160,7 +167,7 @@ export default class About extends App {
       underlay.insertBefore(holder, contactPanel);
       section.tabIndex = i;
       //holder.appendChild(section)
-      section.holderId = i;
+      section.setAttribute("holderId", `${i}`);
 
       section.className = "shrink";
       //section.remove();
@@ -217,21 +224,23 @@ export default class About extends App {
             }
         });*/
     });
-    this.clickerOverlay.addEventListener("click", this.closeAll);
+    this.clickerOverlay.addEventListener("click", () => this.closeAll());
     this.closeButton = this.main.querySelector("#close-button");
     if (this.closeButton)
-      this.closeButton.addEventListener("click", this.closeAll);
+      this.closeButton.addEventListener("click", () => this.closeAll());
 
-    let chatter = this.main.querySelector(".chat-link");
-    if (chatter)
-      chatter.addEventListener("click", (ev) => {
-        Main.systemInstance.switchApp("chat"); //chat id
-      });
+    // TODO re-add chat
+    // let chatter = this.main.querySelector(".chat-link");
+    // if (chatter)
+    //   chatter.addEventListener("click", (ev) => {
+    //     Main.systemInstance.switchApp("chat"); //chat id
+    //   });
 
     setTimeout(() => {
       this.fit();
     }, 1); //make sure DOM is done
-    let portraitHolder = this.main.querySelector(".portrait-holder");
+    let portraitHolder: HTMLElement =
+      this.main.querySelector(".portrait-holder");
     this.portfolioHolder = this.main.querySelector(".portfolio-section-block");
     this.portfolioHolder.addEventListener("scroll", (ev) => {
       if (ev.target.scrollTop > 0) {
@@ -304,7 +313,7 @@ export default class About extends App {
 
       this.currentSection = section;
       this.clickerOverlay.classList.add("clicker-active");
-      setTimeout(this.fit, 1);
+      setTimeout(() => this.fit(), 1);
     } else this.closeAll();
   }
 
@@ -318,7 +327,7 @@ export default class About extends App {
   fitSection(section) {
     section.scrollTo(0, 0);
     if (section.className == "shrink") {
-      let holder = this.holders[section.holderId];
+      let holder = this.holders[section.getAttribute("holderId")];
       section.style.left =
         holder.offsetLeft + 128 - section.offsetWidth / 2 + "px";
       section.style.top = holder.offsetTop + "px";
@@ -331,7 +340,7 @@ export default class About extends App {
     if (ev.target["videoHeight"] == undefined)
       ev.target.removeEventListener("load", this.loadListener);
     else ev.target.removeEventListener("loadeddata", this.loadListener);
-    console.log("late load");
+    // console.log("late load");
   }
 
   shrinkAll() {
@@ -352,7 +361,7 @@ export default class About extends App {
     this.currentSection = null;
     this.clickerOverlay.classList.remove("clicker-active");
     this.closeButton.style.display = "";
-    setTimeout(this.fit, 1);
+    setTimeout(() => this.fit(), 1);
   }
 
   hideOverlay() {
@@ -370,17 +379,17 @@ export default class About extends App {
     let emailButton = dom.querySelector(".mail-link");
 
     function emailButtonOverride(ev) {
-      const string = "CWa[Wleo6]cW_b$Yec"; // crappy obfuscation
+      const str = "CWa[Wleo6]cW_b$Yec"; // crappy obfuscation
 
-      let array = string.split("");
+      let array = str.split("");
 
       //if(ev.originalEvent !== undefined){
-      UI.systemMessage("Fixing email (Anti-Spam)", "success");
+      UI.systemMessage("Char shifting email (Anti-Spam)", "success");
 
       let counter = 0;
       fixerInterval = setInterval(() => {
         let shiftedArray = array.map((val, i) => {
-          return String.fromCharCode(val.charCodeAt(i) + counter);
+          return String.fromCharCode(val.charCodeAt(0) + counter);
         });
         let newString = shiftedArray.join("");
         emailButton.innerText = newString; //''+Math.floor(Math.random()*Math.pow(10,18));
@@ -390,7 +399,7 @@ export default class About extends App {
           emailButton.removeEventListener("click", emailButtonOverride);
           emailButton.href = "mailto:" + newString;
         }
-      }, 200);
+      }, 100);
 
       //}
       ev.preventDefault();

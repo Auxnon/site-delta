@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
-import App from "../types/App";
+import AppEnvironment from "../types/AppEnvironment";
 
-export default class Punk extends App {
+const TAU = Math.PI * 2;
+
+export default class Punk extends AppEnvironment {
   skull: THREE.Group;
   aniFactor = 0;
   speed = 20;
@@ -11,15 +13,17 @@ export default class Punk extends App {
   group;
   moveGroups;
 
-  constructor(dom) {
-    super(dom);
+  constructor(dom: HTMLElement, id: number) {
+    super(dom, id);
     this.scene = new THREE.Scene();
 
-    let ambientLight = new THREE.AmbientLight(0xffffff); // soft white light
+    let ambientLight = new THREE.AmbientLight(0x999999); // soft white light
     this.scene.add(ambientLight);
     let sunLight = new THREE.DirectionalLight(0xffffff, 0.6); //DirectionalLight
     sunLight.position.set(0, 1, 0);
     sunLight.castShadow = true;
+    //@ts-ignore
+    window.sunlight = sunLight;
     this.scene.add(sunLight);
     let sunTarget = new THREE.Object3D();
     sunTarget.position.set(-20, 0, -20);
@@ -76,7 +80,7 @@ export default class Punk extends App {
               if (i % 4 == 0) {
                 let lampClone = lamp.clone();
                 let lampClone2 = lamp.clone();
-                lampClone2.rotation.z = window.TAU / 2;
+                lampClone2.rotation.z = TAU / 2;
                 lampClone2.position.set(23, 0, -14);
                 this.moveGroups[i].add(lampClone);
                 this.moveGroups[i].add(lampClone2);

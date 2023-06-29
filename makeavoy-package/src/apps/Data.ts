@@ -3,16 +3,17 @@ import * as THREE from "three";
 import * as Render from "../Render";
 import * as Main from "../Main";
 import * as Helper from "../Helper";
-import App from "../types/App";
+import AppEnvironment from "../types/AppEnvironment";
 
 let shapes;
 let groupMove;
 let groupPivot;
+const TAU = Math.PI * 2;
 
-export default class Data extends App {
+export default class Data extends AppEnvironment {
   barGroups: THREE.Group[] = [];
-  constructor(dom) {
-    super(dom);
+  constructor(dom: HTMLElement, id: number) {
+    super(dom, id);
     this.initStyle();
     let section = document.createElement("div");
     section.className = "data-section";
@@ -130,7 +131,7 @@ export default class Data extends App {
       groupMove.position.y = -max;
     }
 
-    groupPivot.rotation.z = (pos.x / 2.0 - 0.25) * window.TAU;
+    groupPivot.rotation.z = (pos.x / 2.0 - 0.25) * TAU;
   }
 
   deinit() {}

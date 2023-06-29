@@ -31,7 +31,7 @@ function init(mainDom, zIndex) {
 
     main.appendChild(textDump);
   } else {
-    console.error("UI.js:: uh oh! no system dom element found");
+    console.error("UI::Uh oh! No system dom element found");
   }
 
   /*
