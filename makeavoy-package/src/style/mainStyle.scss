@@ -37,21 +37,32 @@ body {
   background-color: white;
   stroke: white;
   font-family: sans-serif;
-}
-
-body.dark-mode {
-  background-color: black;
+  .dark-mode {
+    background-color: black;
+  }
 }
 
 button {
   border: none;
-}
-
-button:focus {
-  outline: none;
+  &:focus {
+    outline: none;
+  }
+  &.app-sort-button {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    top: 8px;
+    right: 8px;
+    background: center / 24px no-repeat;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="gray"><path d="M0 0h24v24H0V0z" fill="none"/><circle cx="7" cy="14" r="3"/><circle cx="11" cy="6" r="3"/><circle cx="16.6" cy="17.6" r="3"/></svg>');
+  }
 }
 
 #main {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   position: absolute;
@@ -66,6 +77,12 @@ button:focus {
   background-position: left bottom;
   background-size: 70vmax 70vmax;
   background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 16.93 16.93"><g fill-rule="evenodd"><path d="M14.27 8.79c.46 1.5-2.08 2.48-2.31 4.02-.23 1.5 1.9 3.21 1.02 4.45-.9 1.27-3.28-.1-4.65.65-1.33.74-1.32 3.43-2.85 3.5-1.58.08-2.02-2.6-3.49-3.2-1.43-.58-3.55 1.07-4.59-.08-1.06-1.17.78-3.14.3-4.65-.45-1.46-3.1-2.1-2.86-3.6.25-1.54 2.98-1.32 3.87-2.6.87-1.24-.32-3.68 1.02-4.4 1.37-.75 2.93 1.5 4.51 1.4 1.54-.08 2.7-2.49 4.13-1.9 1.47.62.7 3.2 1.77 4.37 1.05 1.13 3.7.57 4.13 2.04z" fill="rgb(181, 247, 242)"/><path d="M11.9 9.8c.35 1.2-1.59 1.98-1.77 3.2-.18 1.2 1.46 2.56.79 3.54-.7 1-2.52-.08-3.57.52-1.02.59-1.01 2.73-2.19 2.78-1.2.06-1.54-2.07-2.67-2.54-1.1-.47-2.72.85-3.52-.07-.82-.93.6-2.5.23-3.7-.34-1.16-2.38-1.66-2.2-2.86.2-1.22 2.29-1.04 2.97-2.06.67-.99-.25-2.93.78-3.5C1.81 4.5 3 6.3 4.21 6.22 5.4 6.16 6.3 4.25 7.38 4.72c1.13.49.53 2.54 1.35 3.46.8.9 2.84.46 3.17 1.63z" fill="rgb(0, 221, 255)"/></g></svg>');
+}
+
+@media (min-width: 600px) and (orientation: landscape) {
+  #main {
+    flex-direction: row;
+  }
 }
 
 .dark-mode #main {
@@ -97,31 +114,6 @@ button:focus {
   transition: border-radius 0.4s, width 0.4s, height 0.4s;
 }
 
-#bar {
-  position: absolute;
-  width: 256px;
-  height: 128px;
-  border-radius: 16px;
-  /*border: white 3px solid;*/
-  background-color: #7774;
-  transform: translate(-50%, -50%);
-  left: 50%;
-  bottom: 64px;
-  box-sizing: border-box;
-  z-index: 1;
-}
-
-#barHandle {
-  width: 80%;
-  height: 32px;
-  border-radius: 32px;
-  /*border: white solid 3px;*/
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -200%);
-}
-
 .app-max {
   width: 100%;
   height: 100%;
@@ -129,29 +121,12 @@ button:focus {
   top: 50% !important;
   left: 50% !important;
 }
-
-#app-center {
-  position: absolute;
-  /*border: white solid 3px;*/
-  z-index: -1;
-  background-color: #7774;
-  box-sizing: border-box;
+.app-partial {
+  // box-sizing: content-box;
   border-radius: 16px;
-  width: 80%;
-  height: calc(100% - 256px);
+  width: var(--partial-width, 100%);
+  height: var(--partial-height, 100%);
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
-button#app-sort-button {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  top: 8px;
-  right: 8px;
-  background: center / 24px no-repeat;
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="gray"><path d="M0 0h24v24H0V0z" fill="none"/><circle cx="7" cy="14" r="3"/><circle cx="11" cy="6" r="3"/><circle cx="16.6" cy="17.6" r="3"/></svg>');
 }
 
 .sorting--enabled {
@@ -174,7 +149,7 @@ button#app-sort-button {
   position: fixed;
   left: 50%;
   transform: translate(-50%);
-  border: 5px white solid;
+  border: 0px white solid;
   fill-opacity: 0;
   mix-blend-mode: difference;
   stroke: white;
@@ -184,63 +159,50 @@ button#app-sort-button {
   stroke-linejoin: round;
   transition: top 0.3s;
   z-index: -1;
-}
-
-#main-title.shrink {
-  left: 0;
-  transform: translate(-112px, -37px) scale(0.25, 0.25);
-  /*yuck*/
-}
-
-#main-title * {
-  stroke-dashoffset: 10;
-  animation: pulse 1.2s backwards;
-}
-
-#main-title .a {
-  animation-delay: 0.5s !important;
-  transition: transform 1s;
-}
-
-#main-title .a2 {
-  animation-delay: 0.75s !important;
-  transition: transform 1s;
-}
-
-#main-title .k {
-  animation-delay: 1.25s !important;
-}
-
-#main-title .k2 {
-  animation-delay: 1.5s !important;
-}
-
-#main-title .e {
-  animation-delay: 2s !important;
-}
-
-#main-title .A {
-  animation-delay: 2.5s !important;
-}
-
-#main-title .A2 {
-  animation-delay: 2.75s !important;
-}
-
-#main-title .v {
-  animation-delay: 3.25s !important;
-}
-
-#main-title .o {
-  animation-delay: 3.75s !important;
-}
-
-#main-title .y {
-  animation-delay: 4.25s !important;
-}
-
-#main-title .y2 {
-  animation-delay: 4.75s !important;
+  * {
+    stroke-dashoffset: 10;
+    animation: pulse 1.2s backwards;
+  }
+  .shrink {
+    left: 0;
+    transform: translate(-112px, -37px) scale(0.25, 0.25);
+    /*yuck*/
+  }
+  .a {
+    animation-delay: 0.5s !important;
+    transition: transform 1s;
+  }
+  .a2 {
+    animation-delay: 0.75s !important;
+    transition: transform 1s;
+  }
+  .k {
+    animation-delay: 1.25s !important;
+  }
+  .k2 {
+    animation-delay: 1.5s !important;
+  }
+  .e {
+    animation-delay: 2s !important;
+  }
+  .A {
+    animation-delay: 2.5s !important;
+  }
+  .A2 {
+    animation-delay: 2.75s !important;
+  }
+  .v {
+    animation-delay: 3.25s !important;
+  }
+  .o {
+    animation-delay: 3.75s !important;
+  }
+  .y {
+    animation-delay: 4.25s !important;
+  }
+  .y2 {
+    animation-delay: 4.75s !important;
+  }
 }
 
 @keyframes pulse {
@@ -266,15 +228,14 @@ button#app-sort-button {
   overflow: hidden;
   touch-action: none;
   pointer-events: none;
+  * {
+    position: relative;
+    left: 50%;
+    transform: translate(-50%);
+  }
 }
 
-.canvas-holder * {
-  position: relative;
-  left: 50%;
-  transform: translate(-50%);
-}
-
-#afterImage {
+.canvas-holder #afterImage {
   width: 100vw;
   height: 100vh;
   position: relative;
@@ -526,77 +487,8 @@ cube:after {
     transform: rotate3d(-1, -1, 1, 20deg) translate3d(-50%, -50%, 100px)
       scale(0.9);
   }
-
-  /* 27%{
-        transform: rotate3d(1, -1,0,60deg) translate3d(-50%, -50%, 50px);
-        
-    }
-    36%{
-        transform: rotate3d(.5, -1,.5,60deg) translate3d(-50%, -50%, 50px);
-    }
-    45%{
-        transform: rotate3d(0, -1,1,60deg) translate3d(-50%, -50%, 50px);
-    }
-    54% {
-        transform: rotate3d(-.5,-.5,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-    63% {
-        transform: rotate3d(-1,0,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-    72% {
-        transform: rotate3d(-.5,-.5,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-    81% {
-        transform: rotate3d(-0,-1,1, 60deg) translate3d(-50%, -50%, 100px);
-    }*/
 }
 
-/*
-@keyframes cube-spin-animation {
-    9% {
-        transform: rotate3d(0, -1,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-     18% {
-        transform: rotate3d(.5, -1,.5, 60deg) translate3d(-50%, -50%, 100px);
-    }
-    27%{
-        transform: rotate3d(1, -1,0,60deg) translate3d(-50%, -50%, 50px);
-        
-    }
-    36%{
-        transform: rotate3d(.5, -1,.5,60deg) translate3d(-50%, -50%, 50px);
-    }
-    45%{
-        transform: rotate3d(0, -1,1,60deg) translate3d(-50%, -50%, 50px);
-    }
-    54% {
-        transform: rotate3d(-.5,-.5,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-    63% {
-        transform: rotate3d(-1,0,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-    72% {
-        transform: rotate3d(-.5,-.5,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-    81% {
-        transform: rotate3d(-0,-1,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-
-}*/
-/* 0% {
-        transform: rotate3d(0, -1,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-     10% {
-        transform: rotate3d(0, -1,1, 60deg) translate3d(-50%, -50%, 100px);
-    }
-
-    20%{
-        transform: rotate3d(0, 0,0,90deg) translate3d(-50%, -50%, 50px);
-        
-    }
-    30%{
-        transform: rotate3d(-.5, 0,0,90deg) translate3d(-50%, -50%, 50px);
-    }*/
 @keyframes spin-extra {
   33% {
     border-radius: 64px;

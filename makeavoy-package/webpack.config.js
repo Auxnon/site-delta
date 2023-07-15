@@ -76,9 +76,19 @@ module.exports = (env, argv) => {
     },
     module: {
       rules: [
+        // {
+        //   test: /\.css$/,
+        //   use: ["style-loader", "css-loader"],
+        // },
+        // scss
         {
-          test: /\.css$/,
-          use: ["style-loader", "css-loader"],
+          test: /\.(sa|sc|c)ss$/,
+          use: [
+            // Creates `style` nodes from JS strings
+            "style-loader",
+            "css-loader",
+            "sass-loader",
+          ],
         },
         {
           test: /\.ts?$/,

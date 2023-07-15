@@ -1,5 +1,5 @@
 import * as UI from "./UI";
-import "./style/mainStyle.css";
+import "./style/mainStyle.scss";
 import { Renderer } from "./Render";
 import { System } from "./System";
 import AppShell from "./types/AppShell";
@@ -65,6 +65,14 @@ APPS[7] = new AppShell(
   import(/* webpackChunkName: "App7Room" */ "./apps/Room")
 );
 
+APPS[8] = new AppShell(
+  main_container,
+  8,
+  "Blog",
+  require("./assets/blog.png"),
+  import(/* webpackChunkName: "App8Blog" */ "./apps/Blog")
+);
+
 export const APP_IDS = {
   sky: 1,
   punk: 2,
@@ -73,6 +81,7 @@ export const APP_IDS = {
   chat: 5,
   donate: 6,
   room: 7,
+  blog: 8,
 };
 
 export let renderer: Renderer | undefined;

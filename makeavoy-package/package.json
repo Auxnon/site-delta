@@ -8,12 +8,12 @@
     "clean-webpack-plugin": "^4.0.0",
     "css-loader": "^6.7.3",
     "html-webpack-plugin": "^5.5.0",
-    "sass": "^1.58.0",
-    "sass-loader": "^13.2.0",
+    "sass": "^1.63.6",
+    "sass-loader": "^13.3.2",
     "sitemap-webpack-plugin": "^1.1.1",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.4.2",
-    "webpack": "^5.75.0",
+    "webpack": "^5.88.1",
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.15.1"
   },
@@ -35,6 +35,9 @@
   },
   "homepage": "https://github.com/Auxnon/site-delta#readme",
   "dependencies": {
-    "three": "^0.152.2"
+    "@types/marked": "^5.0.0",
+    "marked": "^5.1.1",
+    "three": "^0.152.2",
+    "typescript": "^5.1.6"
   }
 }

@@ -1,17 +1,25 @@
 import AppEnvironment from "./AppEnvironment";
 import { renderer, systemInstance } from "../Main.js";
 import attachIcon from "../Shaper";
+import { Position } from "./Position";
+import { Container } from "./Container";
 
+export interface AppLocation {
+  id: number;
+  x: number;
+  y: number;
+}
 export default class AppShell {
   element: HTMLElement;
   instancePromise: Promise<AppEnvironment | void>;
   active: boolean = false;
   isMoving: boolean = false;
   /** offset the cursor has from the element origin */
-  offset = { x: 0, y: 0 };
+  offset: Position = { x: 0, y: 0 };
   /** the object position  that will eventually become the html element position*/
-  pos = { x: 0, y: 0 };
-  /** ID represents a container object, 0 being the bar and 1 being the "home screen" */
+  pos: Position = { x: 0, y: 0 };
+  magnetPos: Position = { x: 0, y: 0 };
+  /** ID represents a container object, 0 being the bar, 1 being the home screen, etc*/
   containerId: number = 0;
   failed: boolean = false;
   constructor(
@@ -29,8 +37,9 @@ export default class AppShell {
     attachIcon(icon, asset);
     this.element.appendChild(icon);
     this.containerId = this.id > 5 ? 1 : 0;
-    this.element.style.top = Math.random() * document.body.offsetWidth + "px";
-    this.element.style.left = Math.random() * document.body.offsetHeight + "px";
+    this.pos.x = Math.random() * document.body.offsetWidth;
+    this.pos.y = Math.random() * document.body.offsetHeight;
+    this.draw();
     this.setZ();
     this.element.addEventListener("pointerdown", (ev) => {
       systemInstance.appSelect(this, ev);
@@ -73,8 +82,10 @@ export default class AppShell {
 
     this.element.style.zIndex = `${this.id > 5 ? -1 : 1}`;
   }
+
   open(canvas?: HTMLElement) {
-    this.max();
+    // this.max();
+    this.partial(systemInstance.getContainer(this.containerId));
     if (canvas) this.element.appendChild(canvas);
     this.loadInstance(canvas);
   }
@@ -91,6 +102,7 @@ export default class AppShell {
     }
   }
 
+  /** fit to whole screen */
   max() {
     // app-max
     this.element.classList.add("app-max");
@@ -98,13 +110,28 @@ export default class AppShell {
     this.element.style.zIndex = "0";
   }
 
+  partial(target: Container) {
+    this.element.classList.add("app-partial");
+    this.active = true;
+    this.element.style.zIndex = "0";
+    this.move(
+      target.size.width / 2 + target.size.x,
+      target.size.height / 2 + target.size.y
+    );
+    this.element.style.setProperty("--partial-width", `${target.size.width}px`);
+    this.element.style.setProperty(
+      "--partial-height",
+      `${target.size.height}px`
+    );
+  }
+
   setZ() {
-    if (this.containerId == 1) this.element.style.zIndex = "-1";
+    if (this.containerId >= 1) this.element.style.zIndex = "-1";
     else this.element.style.zIndex = "1";
   }
 
   min() {
-    this.element.classList.remove("app-max");
+    this.element.classList.remove("app-max", "app-partial");
     this.active = false;
     this.setZ();
 
@@ -146,6 +173,37 @@ export default class AppShell {
     if (!skipDom) this.pos = { x, y };
     this.element.style.left = x + "px";
     this.element.style.top = y + "px";
+  }
+  resetMagnet() {
+    this.magnetPos = { x: this.pos.x, y: this.pos.y };
+  }
+  setMagnet(x: number, y: number) {
+    this.magnetPos = { x, y };
+  }
+  draw() {
+    this.element.style.left = this.pos.x + "px";
+    this.element.style.top = this.pos.y + "px";
+  }
+
+  /** assure element is within parameters of x,y,width, and height */
+  constrain(x: number, y: number, width: number, height: number) {
+    const rect = this.element.getBoundingClientRect();
+    const aw = rect.width / 2;
+    const ah = rect.height / 2;
+
+    if (this.pos.x - aw < x) {
+      this.pos.x = x + aw;
+    } else if (this.pos.x + aw > x + width) {
+      this.pos.x = x + width - aw;
+    }
+
+    if (this.pos.y - ah < y) {
+      this.pos.y = y + ah;
+    } else if (this.pos.y + ah > y + height) {
+      this.pos.y = y + height - ah;
+    }
+
+    this.draw();
   }
 
   // getScene() {
