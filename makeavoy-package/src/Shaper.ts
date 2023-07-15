@@ -84,7 +84,12 @@ function walker(
   const fill = "white";
   const background = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="48" viewBox="0 0 16 16" width="48" ><path stroke-width=".5" stroke="${stroke}" fill="${fill}" d="${d}"/></svg>')`;
 
-  const icon = target.querySelector(".app-icon");
+  let icon;
+  if (target.classList.contains("app-icon")) {
+    icon = target;
+  } else {
+    icon = target.querySelector(".app-icon");
+  }
   if (icon) {
     (icon as HTMLElement).style.backgroundImage = background;
   }
