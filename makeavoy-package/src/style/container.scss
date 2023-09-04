@@ -1,23 +1,36 @@
 .container {
-  position: flex;
-  flex: 1;
+  position: absolute;
   // flex-grow: 1;
   // flex-
-  flex-grow: 0;
-  flex-shrink: 1;
 
   /*border: white solid 3px;*/
   z-index: -1;
-  background-color: #7774;
+  // background-color: #7774;
+  // image-rendering: pixelated;
+  // background-image: url("../assets/dither1.png");
+  background: radial-gradient(
+      circle at center,
+      var(--panel-bg-color) 0.1rem,
+      transparent 0
+    ),
+    radial-gradient(
+      circle at center,
+      var(--panel-bg-color) 0.1rem,
+      transparent 0
+    );
+  background-size: 0.66rem 0.66rem;
+  background-position: 0 0, 0.33rem 0.33rem;
   box-sizing: border-box;
   border-radius: 16px;
   aspect-ratio: 1/1;
   // width: 40%;
-  max-height: calc(100% - 256px);
+  max-height: 512px;
+  max-width: 512px;
   height: 80vmin;
   left: 50%;
   top: 50%;
-  // transform: translate(-50%, -50%);
+  transition: left 0.8s, top 0.8s, width 0.8s, height 0.8s;
+  transform: translate(-50%, -50%);
   &.bar-container {
     position: absolute;
     width: 256px;
@@ -25,7 +38,6 @@
     border-radius: 16px;
     // border: 2px solid black;
     /*border: white 3px solid;*/
-    background-color: #7774;
     transform: translate(-50%, -50%);
     left: 50%;
     bottom: 64px;
@@ -42,15 +54,36 @@
       transform: translate(-50%, -200%);
     }
   }
+  &.container--moving {
+    transition: none;
+    background: none;
+    border: dashed 3px black;
+  }
   .container-handle {
-    width: 80%;
+    cursor: move;
+    width: 40%;
     height: 32px;
     border-radius: 32px;
     /*border: white solid 3px;*/
-    position: absolute;
+    position: relative;
     top: 0;
     left: 50%;
-    background: rgb(0, 0, 0);
+    // background: rgb(0, 0, 0);
+    background-size: contain;
+    // background-color: #7774;
+    z-index: 200;
     transform: translate(-50%, -100%);
+
+    path {
+      stroke-linecap: round;
+      stroke: black;
+      stroke-width: 6;
+    }
+  }
+}
+
+@media (min-width: 600px) and (orientation: landscape) {
+  #main {
+    flex-direction: row;
   }
 }

@@ -51,8 +51,6 @@ export default class About extends AppEnvironment {
 
           //@ts-ignore
           window.portrait = this.portrait;
-
-          this.checkDone();
         });
     });
     //import( /* webpackChunkName: "App4About" */ './about.html').then(module=>{
@@ -75,7 +73,7 @@ export default class About extends AppEnvironment {
         this.initAbout(dom);
         this.emailFixer(dom);
         this.checkDone();
-        //console.log(html);
+        console.log("main done");
       })
       .catch(function (err) {
         // There was an error
@@ -110,8 +108,9 @@ export default class About extends AppEnvironment {
     //UI.systemMessage('test ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
     if (this.main && canvas) {
       let holder = this.main.querySelector(".portrait-holder");
+
       // canvas.custom = 256;
-      holder.appendChild(canvas);
+      if (holder) holder.appendChild(canvas);
       Main.renderer?.resize();
     }
 
@@ -131,9 +130,8 @@ export default class About extends AppEnvironment {
   }
 
   checkDone() {
-    if (this.main && this.portrait) {
-      this.resolver();
-    }
+    // DEV we want to show something sooner rather than later
+    this.resolver();
   }
 
   close() {
@@ -152,9 +150,14 @@ export default class About extends AppEnvironment {
 
   initAbout(dom) {
     this.main = dom.querySelector("main");
-    let underlay = this.main.querySelector(".portfolio-underlay");
+    let underlay1 = this.main.querySelector(".portfolio-underlay");
     this.overlay = this.main.querySelector(".portfolio-overlay");
     this.clickerOverlay = this.main.querySelector(".portfolio-clicker");
+    if (!underlay1) {
+      UI.systemMessage("Issue with page", "error");
+      return;
+    }
+    const underlay = underlay1 as HTMLElement;
 
     let contactPanel = underlay.firstElementChild;
 
@@ -166,11 +169,9 @@ export default class About extends AppEnvironment {
       section.id = "portfolio-section" + i;
       underlay.insertBefore(holder, contactPanel);
       section.tabIndex = i;
-      //holder.appendChild(section)
       section.setAttribute("holderId", `${i}`);
 
       section.className = "shrink";
-      //section.remove();
 
       section.addEventListener("focus", (ev) => {
         this.selectSection(ev.target);
@@ -185,44 +186,6 @@ export default class About extends AppEnvironment {
       let video = section.querySelector("video");
       if (video)
         video.addEventListener("loadeddata", (ev) => this.loadListener(ev));
-
-      /*
-        section.addEventListener('pointerdown',ev=>{
-            moveTarget=section
-            px=ev.clientX
-        })
-        window.addEventListener('pointerup',ev=>{
-            //if(moveTarget)
-
-            moveTarget=null;
-
-        })
-
-        section.addEventListener('pointermove',ev=>{
-            if(moveTarget && moveTarget==section){
-                let x=ev.clientX
-
-                let vx=x-px;
-                console.log(vx)
-                px=x;
-                if(Math.abs(vx)>20)
-                    closeAll();
-            }
-        })*/
-
-      /*
-        //maybe this isnt a good idea after all
-        section.addEventListener('scroll', ev=>{
-            let element = event.target;
-            if (element.scrollHeight - element.scrollTop === element.clientHeight)
-            {
-                console.log('bottom');
-                if(section.nextElementSibling==null)
-                    selectSection( section.parentElement.firstElementChild)
-                else
-                    selectSection( section.nextElementSibling)
-            }
-        });*/
     });
     this.clickerOverlay.addEventListener("click", () => this.closeAll());
     this.closeButton = this.main.querySelector("#close-button");
@@ -239,8 +202,9 @@ export default class About extends AppEnvironment {
     setTimeout(() => {
       this.fit();
     }, 1); //make sure DOM is done
-    let portraitHolder: HTMLElement =
-      this.main.querySelector(".portrait-holder");
+    let portraitHolder: HTMLElement = this.main.querySelector(
+      ".portrait-holder"
+    ) as any;
     this.portfolioHolder = this.main.querySelector(".portfolio-section-block");
     this.portfolioHolder.addEventListener("scroll", (ev) => {
       if (ev.target.scrollTop > 0) {
@@ -366,6 +330,7 @@ export default class About extends AppEnvironment {
 
   hideOverlay() {
     this.overlay.style.opacity = 0;
+    console.log("hide");
   }
 
   unhideOverlay() {

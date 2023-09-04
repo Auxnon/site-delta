@@ -1,0 +1,23 @@
+.cursor {
+  width: 72px;
+  height: 72px;
+  transform: translate(-50%, -100%);
+  position: fixed;
+  pointer-events: none;
+  &.cursor--make-container {
+    border-radius: 16px;
+    border: 3px gray dashed;
+  }
+  &.cursor--destroy {
+    background: rgb(255, 149, 0);
+    $img: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72' stroke-width='6' stroke='orange'  stroke-linecap='round' fill='none'><path d='M8 8L56 56M56 8L8 56'/></svg>");
+    mask-image: #{$img};
+    -webkit-mask-image: #{$img};
+  }
+  &.cursor--full {
+    background: gray;
+    $img: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72' stroke-width='6' stroke='orange'  stroke-linecap='round' fill='none'><path d='M16 16L36 0L56 16M36 0V56'/></svg>");
+    mask-image: #{$img};
+    -webkit-mask-image: #{$img};
+  }
+}

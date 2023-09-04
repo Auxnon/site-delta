@@ -1,13 +1,16 @@
+import { systemInstance } from "../Main";
 import AppShell, { AppLocation } from "./AppShell";
 import { Container } from "./Container";
 
 export class FolderContainer extends Container {
   items: number[] = [];
   appSortOrganized = true;
+  windowed = true;
 
   constructor(id: number, target: HTMLElement) {
     super(id, target);
     this.sortButtonInit();
+    this.addActionLine();
   }
 
   sortButtonInit() {
@@ -28,8 +31,23 @@ export class FolderContainer extends Container {
     target.appendChild(sortButton);
   }
 
-  applyApps(apps: AppShell[], targetApp?: AppShell) {
+  applyApps(
+    apps: AppShell[] | undefined,
+    hovering?: boolean,
+    targetApp?: AppShell
+  ) {
+    if (!apps) return;
+    if (this.windowed) {
+      if (apps.length == 1 || hovering) {
+        this.windowMode(apps[0]);
+        return;
+      } else {
+        this.windowed = false;
+      }
+    }
     let rect = this.getSize();
+    const cx = this.pos.x - rect.width / 2;
+    const cy = this.pos.y - rect.height / 2;
     let locations: AppLocation[] = [];
     if (this.appSortOrganized) {
       const padding = 72;
@@ -40,9 +58,9 @@ export class FolderContainer extends Container {
       const rows = Math.floor(ph / 72);
       const colRemainder = (72 + (rect.width - cols * padding)) / 2;
       const rowRemainder = (72 + (rect.height - rows * padding)) / 2;
-      const offsetX = rect.x + colRemainder;
-      const offsetY = rect.y + rowRemainder;
-      let reserved = [];
+      const offsetX = cx + colRemainder;
+      const offsetY = cy + rowRemainder;
+      let reserved: AppShell[] = [];
       // sort by distance from 0,0
       apps.sort((a, b) => {
         const aDist = Math.sqrt(Math.pow(a.pos.x, 2) + Math.pow(a.pos.y, 2));
@@ -50,13 +68,10 @@ export class FolderContainer extends Container {
         return aDist - bDist;
       });
 
-      // if (targetApp) {
-      // const targetPos = {
-      //   x: Math.round(targetApp.pos.x - rect.x) / 72,
-      //   y: Math.round(targetApp.pos.y - rect.y) / 72,
-      // };
-
       apps.forEach((app, i) => {
+        if (app.isPartial()) {
+          app.close();
+        }
         const pos = {
           x: Math.min(
             Math.max(Math.round((app.pos.x - offsetX) / 72), 0),
@@ -115,13 +130,42 @@ export class FolderContainer extends Container {
       // });
     } else {
       apps.forEach((app, i) => {
-        app.constrain(rect.x, rect.y, rect.width, rect.height);
+        app.constrain(cx, cy, rect.width, rect.height);
+        if (app.isPartial()) {
+          app.close();
+        }
       });
     }
+  }
+
+  windowMode(app: AppShell) {
+    if (!app.isPartial()) {
+      systemInstance.openPartial(app);
+    }
+    app.centerTo(this);
+  }
+
+  isWindowed(): boolean {
+    return this.windowed;
+  }
+
+  handleDrag(ev: PointerEvent) {
+    this.offset = { x: this.pos.x - ev.clientX, y: this.pos.y - ev.clientY };
+    this.isMoving = false;
+    systemInstance.containerDrag(this.id, this, ev);
   }
 
   dragOver(target: AppShell): boolean {
     // throw new Error("Method not implemented.");
     return true;
+  }
+
+  select(): void {
+    this.element.classList.add("container--moving");
+    if (this.windowed) systemInstance.passivePartialOpen(this.id);
+  }
+
+  deselect(): void {
+    this.element.classList.remove("container--moving");
   }
 }

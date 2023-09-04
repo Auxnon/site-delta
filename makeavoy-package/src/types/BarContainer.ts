@@ -17,19 +17,6 @@ export class BarContainer extends Container {
     this.barHandle.classList.add("bar-handle");
     this.element.appendChild(this.barHandle);
 
-    this.barHandle.addEventListener("pointerdown", (ev) => {
-      let xx = this.size.left; //-(barBox.right-barBox.left)/2
-      let yy = this.size.top; //-(barBox.bottom-barBox.top)/2
-
-      this.barMove = true; //{x:ev.clientX-xx,y:ev.clientY-yy};
-
-      NavLine.reactivate();
-
-      window.dispatchEvent(new Event("navlinereset"));
-    });
-    this.barHandle.addEventListener("dragstart", (ev) => {
-      ev.preventDefault();
-    });
     /*barHandle.addEventListener('pointerup',ev=>{
         barMove=false;
     })*/
@@ -41,18 +28,27 @@ export class BarContainer extends Container {
     this.element.style.top = document.body.offsetHeight - 64 + "px";
   }
 
-  applyApps(apps: AppShell[], targetApp?: AppShell) {
+  handleDrag(ev: PointerEvent) {
+    this.barMove = true; //{x:ev.clientX-xx,y:ev.clientY-yy};
+
+    NavLine.reactivate();
+
+    window.dispatchEvent(new Event("navlinereset"));
+  }
+
+  applyApps(apps: AppShell[], hovering?: boolean, targetApp?: AppShell) {
     const appBarCount = apps.length;
     const sideWays = this.barPos == 0 || this.barPos == 2;
     this.sideways = sideWays;
 
+    const dim = (appBarCount > 0 ? appBarCount : 1) * 72;
     if (sideWays) {
-      this.element.style.height =
-        (appBarCount > 0 ? appBarCount : 1) * 72 + "px";
+      this.element.style.height = dim + "px";
+      if (dim !== this.size.height) this.resize();
       this.element.style.width = "72px";
     } else {
-      this.element.style.width =
-        (appBarCount > 0 ? appBarCount : 1) * 72 + "px";
+      this.element.style.width = dim + "px";
+      if (dim !== this.size.width) this.resize();
       this.element.style.height = "72px";
     }
 
@@ -130,6 +126,7 @@ export class BarContainer extends Container {
       this.barHandle.style.height = "80%";
       mainTitle.style.top = "8px";
     }
+    this.resize();
   }
 
   barMoveHandler(ev: PointerEvent) {
@@ -169,6 +166,7 @@ export class BarContainer extends Container {
   }
 
   dragOver(target: AppShell): boolean {
+    console.log("over bar");
     let point = target.magnetPos;
     let d = {
       x: point.x - target.pos.x,
@@ -180,11 +178,12 @@ export class BarContainer extends Container {
       target.isMoving = false;
       target.containerId = 0;
       target.element.style.zIndex = "1";
-      return;
     }
+    return true;
   }
 
   animate() {}
 
   calculate(notate?: boolean) {}
+  select(): void {}
 }

@@ -6,9 +6,6 @@ import AppShell from "./types/AppShell";
 import Shaper from "./Shaper";
 import * as Signature from "./Signature";
 
-import * as Color from "./apps/Color";
-
-Color.init();
 /*CSS classes used
 
 #brightness
@@ -16,9 +13,7 @@ Color.init();
 */
 export let systemInstance: System = new System();
 
-const main_container: HTMLElement = document.querySelector(
-  "#main"
-) as HTMLElement;
+const main_container: HTMLElement = document.querySelector("#main");
 //We could have technically done imports as a variable input to the Render class import statement
 //But webpack won't convert the chunk parameters correctly unless it's explicitly within an import statement
 export const APPS: AppShell[] = [];
@@ -87,45 +82,17 @@ APPS[9] = new AppShell(
   import(/* webpackChunkName: "App9Monitor" */ "./apps/Monitor")
 );
 
-APPS[10] = new AppShell(
-  main_container,
-  10,
-  "Brightness",
-  require("./assets/monitor.png"),
-  () => {
-    UI.cursorMessage(
-      systemInstance.mousePos.x,
-      systemInstance.mousePos.y,
-      "Brightness"
-    );
-  }
-);
-
-APPS[11] = new AppShell(
-  main_container,
-  11,
-  "Edit",
-  require("./assets/monitor.png"),
-  () => {
-    alert("Edit");
-  }
-);
-
-APPS[12] = new AppShell(
-  main_container,
-  12,
-  "Code",
-  require("./assets/code.png"),
-  import(/* webpackChunkName: "CodeApp" */ "./apps/Code/Code")
-);
-
-export const APP_IDS = {};
-
-APPS.forEach((app) => {
-  if (app) {
-    APP_IDS[app.instanceClass.toLowerCase()] = app.id;
-  }
-});
+export const APP_IDS = {
+  sky: 1,
+  punk: 2,
+  data: 3,
+  portfolio: 4,
+  chat: 5,
+  donate: 6,
+  room: 7,
+  blog: 8,
+  monitor: 9,
+};
 
 export let renderer: Renderer | undefined;
 export const rendererPromise = import(

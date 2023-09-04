@@ -11,4 +11,7 @@ export class WindowContainer extends Container {
   applyApps(apps: AppShell[]) {
     throw new Error("Method not implemented.");
   }
+
+  handleDrag(ev: PointerEvent) {}
+  select(): void {}
 }

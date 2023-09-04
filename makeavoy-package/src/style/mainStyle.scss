@@ -20,6 +20,8 @@
   -webkit-box-shadow: inset 0 0 12px black;
   background-color: none;
 }
+:root {
+}
 
 html,
 body {
@@ -34,11 +36,24 @@ body {
   z-index: -1;
   /*a lot z-index mania to get our desired app overlay results DEV better alternatives?*/
   position: relative;
-  background-color: white;
+  background-color: rgb(243, 239, 227);
   stroke: white;
   font-family: sans-serif;
-  .dark-mode {
-    background-color: black;
+  --panel-bg-color: black;
+  --hard-red: rgb(251, 168, 168);
+  --hard-green: rgb(181, 214, 145);
+  --hard-blue: rgb(116, 136, 178);
+  --shadow1: #0003;
+  --shadow2: #4444;
+
+  &.dark-mode {
+    background-color: rgb(47, 12, 48);
+    --panel-bg-color: rgb(125, 57, 123);
+    --hard-red: rgb(78, 3, 3);
+    --hard-green: rgb(60, 82, 35);
+    --hard-blue: rgb(4, 32, 91);
+    --shadow1: #fff3;
+    --shadow2: #8884;
   }
 }
 
@@ -57,6 +72,24 @@ button {
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="gray"><path d="M0 0h24v24H0V0z" fill="none"/><circle cx="7" cy="14" r="3"/><circle cx="11" cy="6" r="3"/><circle cx="16.6" cy="17.6" r="3"/></svg>');
   }
 }
+#background {
+  stroke: none;
+  z-index: -1;
+  pointer-events: none;
+  position: fixed;
+  * {
+    pointer-events: none;
+  }
+  .path-red {
+    fill: var(--hard-red);
+  }
+  .path-green {
+    fill: var(--hard-green);
+  }
+  .path-blue {
+    fill: var(--hard-blue);
+  }
+}
 
 #main {
   display: flex;
@@ -69,14 +102,13 @@ button {
   margin: 0;
   left: 0;
   top: 0;
-  z-index: -1;
-  background: inherit;
+  z-index: 0;
+  // background: inherit;
   overflow: hidden;
   touch-action: none;
   background-repeat: no-repeat;
   background-position: left bottom;
   background-size: 70vmax 70vmax;
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 16.93 16.93"><g fill-rule="evenodd"><path d="M14.27 8.79c.46 1.5-2.08 2.48-2.31 4.02-.23 1.5 1.9 3.21 1.02 4.45-.9 1.27-3.28-.1-4.65.65-1.33.74-1.32 3.43-2.85 3.5-1.58.08-2.02-2.6-3.49-3.2-1.43-.58-3.55 1.07-4.59-.08-1.06-1.17.78-3.14.3-4.65-.45-1.46-3.1-2.1-2.86-3.6.25-1.54 2.98-1.32 3.87-2.6.87-1.24-.32-3.68 1.02-4.4 1.37-.75 2.93 1.5 4.51 1.4 1.54-.08 2.7-2.49 4.13-1.9 1.47.62.7 3.2 1.77 4.37 1.05 1.13 3.7.57 4.13 2.04z" fill="rgb(181, 247, 242)"/><path d="M11.9 9.8c.35 1.2-1.59 1.98-1.77 3.2-.18 1.2 1.46 2.56.79 3.54-.7 1-2.52-.08-3.57.52-1.02.59-1.01 2.73-2.19 2.78-1.2.06-1.54-2.07-2.67-2.54-1.1-.47-2.72.85-3.52-.07-.82-.93.6-2.5.23-3.7-.34-1.16-2.38-1.66-2.2-2.86.2-1.22 2.29-1.04 2.97-2.06.67-.99-.25-2.93.78-3.5C1.81 4.5 3 6.3 4.21 6.22 5.4 6.16 6.3 4.25 7.38 4.72c1.13.49.53 2.54 1.35 3.46.8.9 2.84.46 3.17 1.63z" fill="rgb(0, 221, 255)"/></g></svg>');
 }
 
 @media (min-width: 600px) and (orientation: landscape) {
@@ -85,49 +117,9 @@ button {
   }
 }
 
-.dark-mode #main {
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 16.93 16.93"><g fill-rule="evenodd"><path d="M14.27 8.79c.46 1.5-2.08 2.48-2.31 4.02-.23 1.5 1.9 3.21 1.02 4.45-.9 1.27-3.28-.1-4.65.65-1.33.74-1.32 3.43-2.85 3.5-1.58.08-2.02-2.6-3.49-3.2-1.43-.58-3.55 1.07-4.59-.08-1.06-1.17.78-3.14.3-4.65-.45-1.46-3.1-2.1-2.86-3.6.25-1.54 2.98-1.32 3.87-2.6.87-1.24-.32-3.68 1.02-4.4 1.37-.75 2.93 1.5 4.51 1.4 1.54-.08 2.7-2.49 4.13-1.9 1.47.62.7 3.2 1.77 4.37 1.05 1.13 3.7.57 4.13 2.04z" fill="rgb(70, 21, 74)"/><path d="M11.9 9.8c.35 1.2-1.59 1.98-1.77 3.2-.18 1.2 1.46 2.56.79 3.54-.7 1-2.52-.08-3.57.52-1.02.59-1.01 2.73-2.19 2.78-1.2.06-1.54-2.07-2.67-2.54-1.1-.47-2.72.85-3.52-.07-.82-.93.6-2.5.23-3.7-.34-1.16-2.38-1.66-2.2-2.86.2-1.22 2.29-1.04 2.97-2.06.67-.99-.25-2.93.78-3.5C1.81 4.5 3 6.3 4.21 6.22 5.4 6.16 6.3 4.25 7.38 4.72c1.13.49.53 2.54 1.35 3.46.8.9 2.84.46 3.17 1.63z" fill="rgb(30, 5, 47)"/></g></svg>');
-}
-
-.app {
-  position: absolute;
-  background-color: #4158d0;
-  background-image: linear-gradient(
-    156deg,
-    #4158d0 0%,
-    #c850c0 46%,
-    #ffcc70 100%
-  );
-  border-radius: 16px;
-  width: 56px;
-  height: 56px;
-  top: -100px;
-  transform: translate(-50%, -50%);
-  transition: 0.8s;
-  z-index: 2;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.appMove {
-  border-top: 6px white solid;
-  transition: border-radius 0.4s, width 0.4s, height 0.4s;
-}
-
-.app-max {
-  width: 100%;
-  height: 100%;
-  border-radius: 0px;
-  top: 50% !important;
-  left: 50% !important;
-}
-.app-partial {
-  // box-sizing: content-box;
-  border-radius: 16px;
-  width: var(--partial-width, 100%);
-  height: var(--partial-height, 100%);
-  left: 50%;
-}
+// .dark-mode #main {
+//   background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 16.93 16.93"><g fill-rule="evenodd"><path d="M14.27 8.79c.46 1.5-2.08 2.48-2.31 4.02-.23 1.5 1.9 3.21 1.02 4.45-.9 1.27-3.28-.1-4.65.65-1.33.74-1.32 3.43-2.85 3.5-1.58.08-2.02-2.6-3.49-3.2-1.43-.58-3.55 1.07-4.59-.08-1.06-1.17.78-3.14.3-4.65-.45-1.46-3.1-2.1-2.86-3.6.25-1.54 2.98-1.32 3.87-2.6.87-1.24-.32-3.68 1.02-4.4 1.37-.75 2.93 1.5 4.51 1.4 1.54-.08 2.7-2.49 4.13-1.9 1.47.62.7 3.2 1.77 4.37 1.05 1.13 3.7.57 4.13 2.04z" fill="rgb(70, 21, 74)"/><path d="M11.9 9.8c.35 1.2-1.59 1.98-1.77 3.2-.18 1.2 1.46 2.56.79 3.54-.7 1-2.52-.08-3.57.52-1.02.59-1.01 2.73-2.19 2.78-1.2.06-1.54-2.07-2.67-2.54-1.1-.47-2.72.85-3.52-.07-.82-.93.6-2.5.23-3.7-.34-1.16-2.38-1.66-2.2-2.86.2-1.22 2.29-1.04 2.97-2.06.67-.99-.25-2.93.78-3.5C1.81 4.5 3 6.3 4.21 6.22 5.4 6.16 6.3 4.25 7.38 4.72c1.13.49.53 2.54 1.35 3.46.8.9 2.84.46 3.17 1.63z" fill="rgb(30, 5, 47)"/></g></svg>');
+// }
 
 .sorting--enabled {
   background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" fill="gray"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 13a2 2 0 012 2 2 2 0 01-2 2 2 2 0 01-2-2c0-1.1.9-2 2-2zm-8 2c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 00-2-2 2 2 0 00-2 2zm-6 0c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 00-2-2 2 2 0 00-2 2zm4-6a2 2 0 00-2-2 2 2 0 00-2 2c0 1.1.9 2 2 2a2 2 0 002-2zm2 0c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 00-2-2 2 2 0 00-2 2zm6 0c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 00-2-2 2 2 0 00-2 2z"/></svg>') !important;
@@ -142,6 +134,17 @@ button {
   stroke: inherit;
   mix-blend-mode: difference;
   z-index: -1;
+}
+
+#sig-line {
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin: 0;
+  pointer-events: none;
+  stroke: rgb(148, 98, 196);
+  mix-blend-mode: difference;
+  z-index: 1;
 }
 
 #main-title {
@@ -295,7 +298,10 @@ button {
   border: solid 4px rgb(250, 1, 200);
   /*background-image: linear-gradient(45deg, #FA8BFF 0%, #2BD2FF 52%, #2BFF88 90%);*/
   background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="48" viewBox="0 0 24 24" width="48"  ><path stroke-width="4" stroke="rgb(150,000,250)" d="M1 1h24v24H1V1z" fill="none"/><path stroke-width="2" stroke="rgb(250,1,200)" d="M0 0h24v24H0V0z" fill="none"/></svg>');
-  animation: backgroundMove 2s infinite linear;
+  &.app-max,
+  &.app-partial {
+    animation: backgroundMove 2s infinite linear;
+  }
 }
 
 #app2 .app-icon {

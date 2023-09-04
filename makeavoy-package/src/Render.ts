@@ -160,6 +160,7 @@ export class Renderer {
   }
 
   animate(time: number) {
+    return;
     let delta = time - this.lastTime;
     delta /= 1000.0;
     this.lastTime = time;
@@ -259,9 +260,9 @@ export class Renderer {
 
     if (!disableFade) {
       setTimeout(() => {
-        old.style.opacity = "0";
+        // old.style.opacity = "0";
       }, 1);
-      old.style.opacity = "1";
+      // old.style.opacity = "1";
     }
     const afterImage = this.bufferPrint();
     this.activeApp = app;
@@ -269,9 +270,10 @@ export class Renderer {
     canvas.appendChild(this.renderer.domElement);
     old.appendChild(afterImage);
 
-    canvas.style.opacity = "1";
+    // canvas.style.opacity = "1";
+    canvas.querySelectorAll("#afterImage").forEach((e) => e.remove());
 
-    shell.open(canvas);
+    shell.applyCanvas(canvas);
   }
 
   getScene() {

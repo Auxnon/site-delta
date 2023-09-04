@@ -6,7 +6,8 @@ let points: Position[] = [];
 let navLineMoveFactor = 0;
 let navLineState = 1;
 let tick = false;
-let path = document.querySelector("path");
+let svg: SVGSVGElement = document.querySelector("#nav-line") as any;
+let path: SVGPathElement = svg.querySelector("path") as any;
 
 export function init(mouse: Position) {
   points = [];
@@ -128,6 +129,11 @@ export function animate(bar: BarContainer, mouseObj: Position) {
       if (navLineState != -1) navLineState++;
     }
   }
+}
+
+export function resize(w: number, h: number) {
+  svg.setAttribute("width", document.body.offsetWidth + "px");
+  svg.setAttribute("height", document.body.offsetHeight + "px");
 }
 
 export function calculate(handle: DOMRect, sideways: boolean) {

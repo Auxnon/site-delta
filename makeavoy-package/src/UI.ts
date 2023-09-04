@@ -50,7 +50,12 @@ function init(mainDom, zIndex) {
     	})*/
 }
 
-function systemMessage(m, type, persistant?: boolean, timeout: number = 3500) {
+function systemMessage(
+  m: string,
+  type: { type?: string; color?: string } | string,
+  persistent?: boolean,
+  timeout: number = 3500
+) {
   let dom = document.createElement("div");
   dom.className = "uiSysTop";
 
@@ -102,11 +107,11 @@ function systemMessage(m, type, persistant?: boolean, timeout: number = 3500) {
   dom.appendChild(span);
 
   function _endMessage() {
-    dom.style.animation = persistant
+    dom.style.animation = persistent
       ? "0.5s uiSysMini forwards"
       : "0.5s uiSysFold forwards";
     setTimeout(function () {
-      if (persistant) {
+      if (persistent) {
         dom.style.position = "absolute";
         //dom.style.left = '32px'
         dom.addEventListener("click", function (ev) {
@@ -120,7 +125,7 @@ function systemMessage(m, type, persistant?: boolean, timeout: number = 3500) {
       }
     }, 500);
   }
-  if (!persistant) {
+  if (!persistent) {
     let closeButton = document.createElement("div");
     closeButton.className = "uiCloseButton";
     dom.appendChild(closeButton);
