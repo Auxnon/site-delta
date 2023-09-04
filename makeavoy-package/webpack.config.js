@@ -73,6 +73,7 @@ module.exports = (env, argv) => {
         ".cjs": [".cjs", ".cts"],
         ".mjs": [".mjs", ".mts"],
       },
+      modules: ["node_modules"],
     },
     module: {
       rules: [
@@ -142,12 +143,15 @@ module.exports = (env, argv) => {
       port: 9000,
       proxy: {
         "/assets": {
-          target: "http://192.168.1.42:9001",
+          target: "http://192.168.1.45:9001",
           secure: false,
           changeOrigin: true,
           pathRewrite: { "^/assets": "" },
         },
       },
     },
+    // externals: {
+    //   silt_lua: require("silt_lua"),
+    // },
   };
 };
