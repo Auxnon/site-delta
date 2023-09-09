@@ -40,9 +40,7 @@ export class System {
 
   init() {
     initBackground();
-    NavLine.init(this.mousePos);
     this.homeInit();
-    this.brightnessButtonInit();
     this.animate();
     // setInterval(() => {
     //   this.boundaryCheck();
@@ -59,7 +57,8 @@ export class System {
     setTimeout(() => {
       this.resize(true);
       this.calculatePlacements(true);
-    }, 800);
+      NavLine.init({ x: window.document.body.offsetWidth / 2, y: -200 });
+    }, 1000);
   }
 
   pointerMove(ev: PointerEvent) {
@@ -137,7 +136,7 @@ export class System {
     const quickMovement = NavLine.getMovement() < 10;
     if (this.getBar().barMove) {
       this.getBar().barMove = false;
-      NavLine.setState(1);
+      NavLine.release();
       if (quickMovement) {
         this.closeApp();
       }
@@ -220,7 +219,7 @@ export class System {
   }
 
   animate() {
-    Signature.animate(this.mousePos);
+    NavLine.animate(this.getBar(), this.mousePos);
     this.cursor.animate();
 
     requestAnimationFrame(() => this.animate());
@@ -373,7 +372,7 @@ export class System {
       if (apps) c.applyApps(apps, hovering, target);
     }
 
-    NavLine.calculate(this.getBar().getSize(), this.getBar().sideways);
+    NavLine.calculate(this.getBar().getHandleSize(), this.getBar().sideways);
   }
 
   // adjustApps(amount: number) {
