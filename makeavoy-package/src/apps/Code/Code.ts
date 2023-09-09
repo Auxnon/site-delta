@@ -5,6 +5,30 @@ import AppEnvironment from "../../types/AppEnvironment";
 import "./index.scss";
 import init, { run } from "silt_lua";
 
+const EXAMPLE = `-- Standard Lua applies, for the most part. See https://github.com/Auxnon/silt-lua for updates.
+-- For best performance use local scope. Stack based VM written in rust.
+-- Many compile time errors are not caught yet. Standard library and meta functions not yet ready.
+do
+    local a = 1
+    local b = 2
+    print("Sum of " .. a .. " + " .. b .. " = " .. a + b)
+    print("Int or float types " .. 1 + 2.5 / 3)
+    print("String inference works, '2'+2=" .. "2" + 2)
+    local function closure()
+        local c = 0
+        local function nested()
+            c = c + a
+            return "Closures work " .. c
+        end
+        return nested
+    end
+    local iterate = closure()
+    print(iterate())
+    print(iterate())
+    print("You can also return values to the console.")
+    return "Completed!"
+end`;
+
 export default class Code extends AppEnvironment {
   panel: HTMLElement;
   area: HTMLTextAreaElement;
@@ -25,13 +49,24 @@ export default class Code extends AppEnvironment {
       // let a = run("1+2");
       // alert(a);
     });
+    this.makePanel();
+    this.refreshCode();
   }
 
   open(canvas?: HTMLElement): void {
-    this.makePanel();
-    this.addLine();
-    this.addLine();
-    this.addLine();
+    if (this.dom.children.length > 1) {
+      if (!this.dom.querySelector(".code-panel")) {
+        this.dom.appendChild(this.panel);
+      }
+      if (!this.dom.querySelector(".backpanel")) {
+        const extra = document.createElement("div");
+        extra.classList.add("code-panel", "backpanel");
+        this.dom.insertBefore(extra, this.panel);
+      }
+
+      return;
+    }
+    this.dom.appendChild(this.panel);
   }
 
   refreshCode() {
@@ -65,7 +100,7 @@ export default class Code extends AppEnvironment {
 
     const a = document.createElement("textarea");
     a.classList.add("code-area");
-    a.innerText = "a";
+    a.value = EXAMPLE;
     this.area = a;
     this.area.addEventListener("keydown", (ev: KeyboardEvent) => {
       this.keycheck(ev);
@@ -77,8 +112,20 @@ export default class Code extends AppEnvironment {
     seg.appendChild(b);
     this.back = b;
 
+    const button = document.createElement("button");
+    button.classList.add("code-run");
+    button.innerText = "Run";
+    button.addEventListener("click", () => {
+      this.run();
+    });
+    p.appendChild(button);
+
     const out = document.createElement("div");
     out.classList.add("code-output");
+    out.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault();
+      this.output.innerText = "";
+    });
     const outp = document.createElement("p");
     out.appendChild(outp);
     this.output = outp;
@@ -137,6 +184,9 @@ export default class Code extends AppEnvironment {
     } else {
       this.output.innerText = "lua module failed to load";
     }
+    if (this.output.parentElement)
+      this.output.parentElement.scrollTop =
+        this.output.parentElement.scrollHeight;
   }
 
   println(s: string) {
@@ -144,8 +194,9 @@ export default class Code extends AppEnvironment {
   }
 
   close(): void {
-    this.dom.childNodes.forEach((n, i) => {
-      if (i > 0) this.dom.removeChild(n);
-    });
+    let c = this.dom.childNodes.length;
+    for (let i = 1; i < c; i++) {
+      this.dom.removeChild(this.dom.childNodes[1]);
+    }
   }
 }
