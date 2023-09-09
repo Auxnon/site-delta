@@ -145,78 +145,8 @@ button {
   stroke: rgb(148, 98, 196);
   mix-blend-mode: difference;
   z-index: 1;
-}
-
-#main-title {
-  border-radius: 32px;
-  position: fixed;
-  left: 50%;
-  transform: translate(-50%);
-  border: 0px white solid;
-  fill-opacity: 0;
-  mix-blend-mode: difference;
-  stroke: white;
-  stroke-width: 5;
-
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: top 0.3s;
-  z-index: -1;
-  * {
-    stroke-dashoffset: 10;
-    animation: pulse 1.2s backwards;
-  }
-  .shrink {
-    left: 0;
-    transform: translate(-112px, -37px) scale(0.25, 0.25);
-    /*yuck*/
-  }
-  .a {
-    animation-delay: 0.5s !important;
-    transition: transform 1s;
-  }
-  .a2 {
-    animation-delay: 0.75s !important;
-    transition: transform 1s;
-  }
-  .k {
-    animation-delay: 1.25s !important;
-  }
-  .k2 {
-    animation-delay: 1.5s !important;
-  }
-  .e {
-    animation-delay: 2s !important;
-  }
-  .A {
-    animation-delay: 2.5s !important;
-  }
-  .A2 {
-    animation-delay: 2.75s !important;
-  }
-  .v {
-    animation-delay: 3.25s !important;
-  }
-  .o {
-    animation-delay: 3.75s !important;
-  }
-  .y {
-    animation-delay: 4.25s !important;
-  }
-  .y2 {
-    animation-delay: 4.75s !important;
-  }
-}
-
-@keyframes pulse {
-  0% {
-    stroke-dasharray: 0 250;
-    /*stroke-width:1;*/
-  }
-
-  100% {
-    stroke-dasharray: 250 0;
-    /*stroke-width:10;*/
+  .full-app & {
+    transform: translate(-40%, -20%) scale(0.5);
   }
 }
 

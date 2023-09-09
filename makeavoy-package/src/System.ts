@@ -219,6 +219,10 @@ export class System {
   }
 
   animate() {
+    Signature.animate(
+      this.mousePos,
+      !(!this.currentApp || this.currentApp.isPartial())
+    );
     NavLine.animate(this.getBar(), this.mousePos);
     this.cursor.animate();
 

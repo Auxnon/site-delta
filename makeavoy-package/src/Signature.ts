@@ -194,16 +194,16 @@ function pup(ev: PointerEvent) {
   isDown = false;
 }
 
-export function animate(mouse: Position) {
+export function animate(mouse: Position, throttle: boolean) {
   //   circler();
-  draw(mouse);
+  draw(mouse, throttle);
 }
 export function resize(w: number, h: number) {
   //   points[0] = { x: w / 2, y: h / 2 };
   size = Math.min(w, h) / 2;
 }
 
-function draw(mouse: Position) {
+function draw(mouse: Position, throttle: boolean) {
   const stagger = false;
   let d = "";
   timer++;
@@ -240,6 +240,13 @@ function draw(mouse: Position) {
         skip = 0;
       }
     }
+    if (timer > points[points.length - 1].t) {
+      complete = true;
+      if (throttle) {
+        timer--;
+        return;
+      }
+    }
     wind += stagger ? 100 : 0.1;
     const w = document.body.clientWidth;
     const h = document.body.clientHeight;
@@ -247,9 +254,7 @@ function draw(mouse: Position) {
     const df = w > h ? h : w;
     const mox = Math.round((1000 * (mouse.x - xf)) / df);
     const moy = Math.round((1000 * mouse.y) / df);
-    if (timer > points[points.length - 1].t) {
-      complete = true;
-    }
+
     points.forEach((p) => {
       if (timer > p.t) {
         let mx = mox - p.x;
