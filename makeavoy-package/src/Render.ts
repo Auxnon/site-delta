@@ -160,7 +160,6 @@ export class Renderer {
   }
 
   animate(time: number) {
-    return;
     let delta = time - this.lastTime;
     delta /= 1000.0;
     this.lastTime = time;
