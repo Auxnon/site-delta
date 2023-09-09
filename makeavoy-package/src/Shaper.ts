@@ -4,14 +4,14 @@ export default function attachIcon(target: HTMLElement, imageSrc: string) {
   const img = new Image();
   img.addEventListener("load", () => {
     const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
+    canvas.width = img.width + 2;
+    canvas.height = img.height + 2;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
-    ctx.drawImage(img, 0, 0, img.width, img.height);
+    ctx.drawImage(img, 1, 1, img.width, img.height);
 
     if (target) {
-      walker(ctx, img.width, img.height, target);
+      walker(ctx, img.width + 2, img.height + 2, target);
     }
     img.removeEventListener("load", this as any);
   });
@@ -82,7 +82,7 @@ function walker(
 
   const stroke = "none"; //rgb(150,000,250)";
   const fill = "white";
-  const background = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="48" viewBox="0 0 16 16" width="48" ><path stroke-width=".5" stroke="${stroke}" fill="${fill}" d="${d}"/></svg>')`;
+  const background = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="48" viewBox="0 0 18 18" width="48" ><path stroke-width=".5" stroke="${stroke}" fill="${fill}" d="${d}"/></svg>')`;
 
   let icon;
   if (target.classList.contains("app-icon")) {

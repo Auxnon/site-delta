@@ -76,7 +76,14 @@ APPS[8] = new AppShell(
   8,
   "Blog",
   require("./assets/blog.png"),
-  import(/* webpackChunkName: "App8Blog" */ "./apps/Blog")
+  () => {
+    UI.cursorMessage(
+      systemInstance.mousePos.x,
+      systemInstance.mousePos.y,
+      "Coming Soon"
+    );
+  }
+  // import(/* webpackChunkName: "App8Blog" */ "./apps/Blog")
 );
 
 APPS[9] = new AppShell(
@@ -84,7 +91,14 @@ APPS[9] = new AppShell(
   9,
   "Monitor",
   require("./assets/monitor.png"),
-  import(/* webpackChunkName: "App9Monitor" */ "./apps/Monitor")
+  // import(/* webpackChunkName: "App9Monitor" */ "./apps/Monitor")
+  () => {
+    UI.cursorMessage(
+      systemInstance.mousePos.x,
+      systemInstance.mousePos.y,
+      "Coming Soon"
+    );
+  }
 );
 
 APPS[10] = new AppShell(
@@ -94,11 +108,6 @@ APPS[10] = new AppShell(
   require("./assets/brightness.png"),
   () => {
     document.body.classList.toggle("dark-mode");
-    // UI.cursorMessage(
-    //   systemInstance.mousePos.x,
-    //   systemInstance.mousePos.y,
-    //   "Brightness"
-    // );
   }
 );
 
@@ -106,9 +115,14 @@ APPS[11] = new AppShell(
   main_container,
   11,
   "Edit",
-  require("./assets/monitor.png"),
+  require("./assets/edit.png"),
   () => {
-    alert("Edit");
+    // alert("Edit");
+    UI.cursorMessage(
+      systemInstance.mousePos.x,
+      systemInstance.mousePos.y,
+      "Coming Soon"
+    );
   }
 );
 
