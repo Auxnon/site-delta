@@ -45,6 +45,9 @@ export abstract class Container {
   getSize() {
     return this.size;
   }
+  getHandleSize() {
+    return this.handle.getBoundingClientRect();
+  }
 
   inBounds(x: number, y: number) {
     return (

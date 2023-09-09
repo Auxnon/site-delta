@@ -114,9 +114,11 @@ export class System {
       } else {
         // then we have to be a container
         this.checkContainerOrder();
-        if (this.targetMove.pos.y > document.body.offsetHeight - 64) {
+
+        const h = this.targetMove.getSize().height / 2;
+        if (this.targetMove.pos.y > document.body.offsetHeight) {
           this.cursor.hover(Hover.Destroy);
-        } else if (this.targetMove.pos.y < 64) {
+        } else if (this.targetMove.pos.y < h + 96) {
           this.cursor.hover(Hover.Full);
         }
       }
@@ -152,7 +154,7 @@ export class System {
           //targetMove.style.zIndex = 2;
           window.history.pushState({}, "", "/");
         } else {
-          this.switchApp(this.targetMove.id);
+          this.switchApp(this.targetMove);
           //window.history.pushState({ appId: targetMove.appId }, targetMove.name, '?id=' + targetMove.appId + '&app=' + targetMove.id);
         }
       } else if (this.cursor.getMode() != Hover.None) {
@@ -335,7 +337,7 @@ export class System {
         const h = height / count;
         this.containers.forEach((c, i) => {
           if (i > 0) {
-            c.move(w, (i - 0.5) * h);
+            c.move(w, (i - 0.5 - 0.2 * (i - 1)) * h);
           }
         });
       }
@@ -417,7 +419,7 @@ export class System {
       }
     });
     if (list.length == 1) {
-      this.appSelect(list[0], this.cursor.pos.x, this.cursor.pos.y);
+      this.switchApp(list[0]);
     }
   }
 
@@ -454,58 +456,64 @@ export class System {
     APPS[id]?.pend();
   }
 
-  switchApp(iid: number | string) {
+  switchApp(id: number | string | AppShell) {
     this.closeApp();
-    let id = 0;
-    if (typeof iid === "string") {
-      id = APP_IDS[iid];
-      if (iid == undefined) return;
+    if (typeof id === "object") {
+      this.openApp(id);
+      window.location.hash = `#${id.instanceClass.toLowerCase()}`;
     } else {
-      id = iid;
-    }
-    this.openApp(id);
-    let hashString = Object.keys(APP_IDS).find((key) => APP_IDS[key] == id);
-    if (hashString) window.location.hash = "#" + hashString;
-  }
-
-  brightnessButtonInit() {
-    let brightness = document.querySelector("#brightness");
-    if (brightness) {
-      brightness.addEventListener("click", (ev) => {
-        if (!brightness?.classList.toggle("brightness--dark")) {
-          document.body.classList.add("dark-mode");
-        } else {
-          document.body.classList.remove("dark-mode");
-        }
-      });
+      let numeric_id = 0;
+      if (typeof id === "string") {
+        numeric_id = APP_IDS[id];
+        if (id == undefined) return;
+      } else {
+        numeric_id = id;
+      }
+      this.openApp(numeric_id);
+      let hashString = Object.keys(APP_IDS).find(
+        (key) => APP_IDS[key] == numeric_id
+      );
+      if (hashString) window.location.hash = `#${hashString}`;
     }
   }
 
-  async openApp(id: number) {
-    const app = APPS[id];
-    if (!app) return;
-    app.open2();
-    this.currentApp = app;
+  async openApp(id: number | AppShell) {
+    let app;
+    if (typeof id === "number") {
+      app = APPS[id];
+      if (!app) return;
+    } else {
+      app = id;
+    }
+    if (app.open()) {
+      this.currentApp = app;
+      document.body.classList.add("full-app");
+    }
   }
 
   passivePartialOpen(containerId: number) {
     APPS.forEach((app) => {
       if (app && app.containerId == containerId) {
-        app.openPartial();
-        this.currentApp = app;
+        this.openPartial(app);
       }
     });
   }
 
-  openPartial(app: AppShell) {
-    this.currentApp = app;
-    app.openPartial();
+  /** Open partially if not a one-off, returns false if one-off function */
+  openPartial(app: AppShell, container?: Container): boolean {
+    if (app.openPartial(container)) {
+      this.currentApp = app;
+      return true;
+    }
+    return false;
   }
 
   closeApp() {
     this.currentApp?.close();
+    this.currentApp = undefined;
     window.history.pushState({}, "", "/");
 
-    this.mainTitle.classList.remove("shrink");
+    // this.mainTitle.classList.remove("shrink");
+    document.body.classList.remove("full-app");
   }
 }

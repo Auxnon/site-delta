@@ -59,6 +59,7 @@ export default class AppShell {
     this.element.addEventListener("dragstart", (ev) => {
       ev.preventDefault();
     });
+    this.element.classList.add("app-" + this.instanceClass.toLowerCase());
     host.appendChild(this.element);
 
     if (moduleLoader instanceof Promise) {
@@ -106,19 +107,30 @@ export default class AppShell {
   show() {
     this.element.style.opacity = "1";
   }
-
-  open2() {
-    this.max();
+  /** runs open method, which is either an application or a singular one-off function. Returns false for one-offs*/
+  open(): boolean {
     if (this.openHook) {
       this.openHook();
-    } else {
-      this.openLogic();
+      return false;
     }
+    this.max();
+    this.openLogic();
+    return true;
   }
 
-  openPartial() {
+  isOneOff() {
+    return this.openHook != undefined;
+  }
+
+  openPartial(container?: Container): boolean {
+    if (this.openHook) {
+      return false;
+    }
     this.partial(systemInstance.getContainer(this.containerId));
     this.openLogic();
+    if (container) this.centerTo(container);
+
+    return true;
   }
 
   private openLogic() {
@@ -136,7 +148,11 @@ export default class AppShell {
 
   /** provide the render canvas to this app shell, completing the opening processes */
   applyCanvas(canvas: HTMLElement) {
+    let current = this.element.querySelector(".canvas-holder");
+    if (current == canvas) return;
+    if (current) current.remove();
     this.element.appendChild(canvas);
+
     this.loadInstance(canvas);
   }
 

@@ -3,7 +3,6 @@ import AppShell, { AppLocation } from "./AppShell";
 import { Container } from "./Container";
 
 export class FolderContainer extends Container {
-  items: number[] = [];
   appSortOrganized = true;
   windowed = true;
 
@@ -38,7 +37,7 @@ export class FolderContainer extends Container {
   ) {
     if (!apps) return;
     if (this.windowed) {
-      if (apps.length == 1 || hovering) {
+      if ((apps.length == 1 || hovering) && !apps[0].isOneOff()) {
         this.windowMode(apps[0]);
         return;
       } else {
@@ -140,9 +139,10 @@ export class FolderContainer extends Container {
 
   windowMode(app: AppShell) {
     if (!app.isPartial()) {
-      systemInstance.openPartial(app);
+      systemInstance.openPartial(app, this);
+    } else {
+      app.centerTo(this);
     }
-    app.centerTo(this);
   }
 
   isWindowed(): boolean {

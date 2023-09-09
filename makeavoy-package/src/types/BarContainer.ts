@@ -3,7 +3,6 @@ import { Container } from "./Container";
 import * as NavLine from "../NavLine";
 
 export class BarContainer extends Container {
-  barHandle: HTMLElement;
   /** Position of bar on the screen */
   barPos: number = 1;
   sideways: boolean = false;
@@ -13,27 +12,21 @@ export class BarContainer extends Container {
   constructor(id: number, target: HTMLElement) {
     super(id, target);
     this.element.classList.add("bar-container");
-    this.barHandle = document.createElement("div");
-    this.barHandle.classList.add("bar-handle");
-    this.element.appendChild(this.barHandle);
 
+    this.handle.style.width = "80%";
     /*barHandle.addEventListener('pointerup',ev=>{
         barMove=false;
     })*/
 
     this.appPoints = [];
 
-    this.barHandle.style.transform = "translate(-50%,-200%)";
     this.element.style.left = "50%";
     this.element.style.top = document.body.offsetHeight - 64 + "px";
   }
 
   handleDrag(ev: PointerEvent) {
     this.barMove = true; //{x:ev.clientX-xx,y:ev.clientY-yy};
-
     NavLine.reactivate();
-
-    window.dispatchEvent(new Event("navlinereset"));
   }
 
   applyApps(apps: AppShell[], hovering?: boolean, targetApp?: AppShell) {
@@ -93,43 +86,41 @@ export class BarContainer extends Container {
       //right
       this.element.style.left = document.body.offsetWidth - 64 + "px";
       this.element.style.top = "50%"; //window.innerHeight/2;
-      // this.barCalculate();
-      this.barHandle.style.transform = "translate(-200%,-50%)";
-      this.barHandle.style.width = "32px";
-      this.barHandle.style.height = "80%";
+      // this.barHandle.style.transform = "translate(-200%,-50%)";
+      // this.barHandle.style.width = "32px";
+      // this.barHandle.style.height = "80%";
       mainTitle.style.top = "8px";
     } else if (this.barPos == 3) {
       //top
-      this.barHandle.style.transform = "translate(-50%,100%)";
+      // this.barHandle.style.transform = "translate(-50%,100%)";
       this.element.style.left = "50%";
       this.element.style.top = "64px"; //-196+window.innerWidth/2
       mainTitle.style.top = "calc(100% - 120px)";
-      // this.barCalculate();
-      this.barHandle.style.height = "32px";
-      this.barHandle.style.width = "80%";
+      // this.barHandle.style.height = "32px";
+      // this.barHandle.style.width = "80%";
     } else if (this.barPos == 1) {
       //bottom
-      this.barHandle.style.transform = "translate(-50%,-200%)";
+      // this.barHandle.style.transform = "translate(-50%,-200%)";
       this.element.style.left = "50%";
       this.element.style.top = document.body.offsetHeight - 64 + "px"; //-196+window.innerWidth/2
       mainTitle.style.top = "8px";
-      // this.barCalculate();
-      this.barHandle.style.height = "32px";
-      this.barHandle.style.width = "80%";
+      // this.barHandle.style.height = "32px";
+      // this.barHandle.style.width = "80%";
     } else {
       //left
-      this.barHandle.style.transform = "translate(100%,-50%)";
+      // this.barHandle.style.transform = "translate(100%,-50%)";
       this.element.style.left = "64px";
       this.element.style.top = "50%";
-      // this.barCalculate();
-      this.barHandle.style.width = "32px";
-      this.barHandle.style.height = "80%";
+      // this.barHandle.style.width = "32px";
+      // this.barHandle.style.height = "80%";
       mainTitle.style.top = "8px";
     }
     this.resize();
   }
 
   barMoveHandler(ev: PointerEvent) {
+    // TODO should we fix this
+    return;
     if (this.barMove) {
       // this.barMoveFactor++;
       let xx = ev.clientX;
@@ -185,5 +176,7 @@ export class BarContainer extends Container {
   animate() {}
 
   calculate(notate?: boolean) {}
+  drawActionLine(): void {}
+  addActionLine(): void {}
   select(): void {}
 }
