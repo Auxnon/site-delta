@@ -86,12 +86,14 @@ fn makeavoy_serve() -> Router {
 
     let assets = ServeDir::new("makeavoy-assets"); // assets served in dedicated folder
     let blog = ServeDir::new("Blog"); // a blog I guess lives here as unorganized markdown and image files
+    let archive = ServeDir::new("archive");
 
     Router::new()
-        .route("/blog", post(blog_handler()))
+        // .route("/blog", post(blog_handler()))
         .route("/foo", get(|| async { "Hi from /foo" }))
         .nest_service("/assets", assets)
         .nest_service("/blog", blog)
+        .nest_service("/archive", archive)
         .fallback_service(serve_dir)
 }
 
@@ -118,30 +120,30 @@ async fn serve(app: Router, port: u16, address: [u8; 4], pems: Option<(String, S
 }
 
 async fn blog_handler() -> impl Fn() -> Response<Json<Vec<String>>> {
-    let blog_items = get_blog_items().unwrap_or_else(|_| vec![]);
+    let blog_items = vec![]; //get_blog_items().unwrap_or_else(|_| vec![]);
     let j = Json(blog_items);
     return move || {
         return Response::new(j.clone());
     };
 }
 // Get first 100 items in sqlite table bloggy ascending by created date
-fn get_blog_items() -> Result<Vec<String>, rusqlite::Error> {
-    let conn = rusqlite::Connection::open("db.sqlite3")?;
-    let mut stmt =
-        conn.prepare("SELECT * FROM bloggy WHERE image = 0 ORDER BY created ASC LIMIT 100")?;
-    stmt.query_map([], |row| match row.get::<String>(0) {
-        Ok(s) => Ok(s),
-        Err(e) => Err(e),
-    })?
-    .filter_map(|s| match s {
-        Ok(s) => {
-            if s.len() > 0 {
-                Some(s)
-            } else {
-                None
-            }
-        }
-        Err(e) => None,
-    })
-    .collect::<Vec<String>>()
-}
+// fn get_blog_items() -> Result<Vec<String>, rusqlite::Error> {
+//     let conn = rusqlite::Connection::open("db.sqlite3")?;
+//     let mut stmt =
+//         conn.prepare("SELECT * FROM bloggy WHERE image = 0 ORDER BY created ASC LIMIT 100")?;
+//     stmt.query_map([], |row| match row.get::<String>(0) {
+//         Ok(s) => Ok(s),
+//         Err(e) => Err(e),
+//     })?
+//     .filter_map(|s| match s {
+//         Ok(s) => {
+//             if s.len() > 0 {
+//                 Some(s)
+//             } else {
+//                 None
+//             }
+//         }
+//         Err(e) => None,
+//     })
+//     .collect::<Vec<String>>()
+// }
