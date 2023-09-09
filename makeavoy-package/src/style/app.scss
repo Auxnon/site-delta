@@ -1,28 +1,45 @@
 .app {
   position: absolute;
-  background-color: #4158d0;
-  background-image: linear-gradient(
-    156deg,
-    #4158d0 0%,
-    #c850c0 46%,
-    #ffcc70 100%
-  );
+  background-color: var(--hard-blue);
+  // background-image: linear-gradient(
+  //   156deg,
+  //   #4158d0 0%,
+  //   #c850c0 46%,
+  //   #ffcc70 100%
+  // );
   border-radius: 16px;
   width: 56px;
   height: 56px;
   top: -100px;
   transform: translate(-50%, -50%);
-  transition: left 0.8s, top 0.8s, width 0.8s, height 0.8s, border-radius 0.8s;
+  transition: left 0.8s, top 0.8s, width 0.8s, height 0.8s, border-radius 0.8s,
+    transform 0.2s, background-color 0.1s;
   z-index: 2;
   overflow: hidden;
   box-sizing: border-box;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.11), 0 2px 2px rgba(0, 0, 0, 0.11),
+    0 4px 4px rgba(0, 0, 0, 0.11), 0 8px 8px rgba(0, 0, 0, 0.11),
+    0 16px 16px rgba(0, 0, 0, 0.11), 0 32px 32px rgba(0, 0, 0, 0.11);
+
+  .app-icon {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: center / 48px no-repeat;
+    pointer-events: none;
+  }
   .canvas-holder {
     opacity: 0;
   }
+  &:hover {
+    transform: scale(110%) translate(-45%, -50%);
+  }
   &.app--moving {
-    border-top: 6px black solid;
-    border-left: 6px black solid;
-    transition: border-radius 0.4s, width 0.4s, height 0.4s;
+    transform: translate(-50%, -80%);
+    transform: scale(110%) translate(-45%, -45%);
+    transition: border-radius 0.4s, width 0.4s, height 0.4s,
+      background-color 0.2s;
+    z-index: 100 !important;
   }
   &.app-max {
     width: 100%;
@@ -30,8 +47,14 @@
     border-radius: 0px;
     top: 50% !important;
     left: 50% !important;
+    .app-icon {
+      background-image: none !important;
+    }
     .canvas-holder {
       opacity: 1;
+    }
+    &:hover {
+      transform: scale(100%) translate(-50%, -50%);
     }
   }
   &.app-partial {
@@ -40,8 +63,75 @@
     width: var(--partial-width, 100%);
     height: var(--partial-height, 100%);
     left: 50%;
+    .app-icon {
+      background-image: none !important;
+    }
     .canvas-holder {
       opacity: 1;
     }
+    &:hover {
+      transform: scale(100%) translate(-50%, -50%);
+    }
   }
+
+  &.app-brightness {
+    background-color: var(--hard-green);
+    & .app-icon {
+      // background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" fill="white"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M22.6 11.29L20 8.69V5c0-.55-.45-1-1-1h-3.69l-2.6-2.6c-.39-.39-1.02-.39-1.41 0L8.69 4H5c-.55 0-1 .45-1 1v3.69l-2.6 2.6c-.39.39-.39 1.02 0 1.41L4 15.3V19c0 .55.45 1 1 1h3.69l2.6 2.6c.39.39 1.02.39 1.41 0l2.6-2.6H19c.55 0 1-.45 1-1v-3.69l2.6-2.6c.39-.39.39-1.03 0-1.42zm-4.68 1.69c-.34 2.12-1.85 3.94-3.88 4.66-1.21.43-2.41.45-3.5.18-.41-.1-.48-.65-.13-.9C11.98 15.84 13 14.04 13 12s-1.02-3.84-2.58-4.92c-.35-.24-.29-.79.13-.9 1.09-.27 2.29-.25 3.5.18 2.02.72 3.54 2.54 3.88 4.66.05.33.07.66.07.98-.01.32-.03.65-.08.98z"/></svg>');
+      .dark-mode & {
+        // background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 15.31l2.6-2.6c.39-.39.39-1.02 0-1.41L20 8.69V5c0-.55-.45-1-1-1h-3.69l-2.6-2.6c-.39-.39-1.02-.39-1.41 0L8.69 4H5c-.55 0-1 .45-1 1v3.69l-2.6 2.6c-.39.39-.39 1.02 0 1.41L4 15.3V19c0 .55.45 1 1 1h3.69l2.6 2.6c.39.39 1.02.39 1.41 0l2.6-2.6H19c.55 0 1-.45 1-1v-3.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>') !important;
+      }
+    }
+  }
+
+  &.app-skyland {
+    background-color: var(--hard-red);
+    &.app-max {
+      background-color: #edae7e;
+      .dark-mode & {
+        background-color: #c61b12;
+        background-image: linear-gradient(150deg, #c61b12 0%, #38053b 100%);
+      }
+    }
+  }
+
+  &.app-punk {
+    background-color: var(--hard-red);
+    &.app-max {
+      background-color: purple;
+    }
+  }
+
+  &.app-room {
+    background-color: var(--hard-red);
+    &.app-max {
+      background-color: #f5f5f5;
+      .dark-mode & {
+        background-color: #1a1a1a;
+      }
+    }
+  }
+
+  #brightness {
+    z-index: 3;
+    width: 32px;
+    height: 32px;
+    border-radius: 28px;
+    position: absolute;
+    top: 0;
+    right: 12px;
+    background: center / 28px no-repeat;
+  }
+
+  .brightness--dark {
+  }
+}
+
+.app-about .canvas-holder {
+  height: 256px;
+  width: 256px;
+  border-radius: 128px;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
 }

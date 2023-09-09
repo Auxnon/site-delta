@@ -62,7 +62,7 @@
   .container-handle {
     cursor: move;
     width: 40%;
-    height: 32px;
+    height: 24px;
     border-radius: 32px;
     /*border: white solid 3px;*/
     position: relative;
@@ -74,6 +74,9 @@
     z-index: 200;
     transform: translate(-50%, -100%);
 
+    svg {
+      filter: drop-shadow(8px 7px 5px rgb(0 0 0 / 0.4));
+    }
     path {
       stroke-linecap: round;
       stroke: black;
