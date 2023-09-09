@@ -358,8 +358,10 @@ export class System {
             app.containerId = 0;
             appLayers[0].push(app);
           }
-          app.setZ();
-          app.close();
+          if (this.currentApp !== app) {
+            app.setZ();
+            app.close();
+          }
         } else {
           if (!appLayers[app.containerId]) appLayers[app.containerId] = [];
           appLayers[app.containerId].push(app);
@@ -457,8 +459,8 @@ export class System {
   }
 
   switchApp(id: number | string | AppShell) {
-    this.closeApp();
     if (typeof id === "object") {
+      if (this.currentApp != id) this.closeApp();
       this.openApp(id);
       window.location.hash = `#${id.instanceClass.toLowerCase()}`;
     } else {

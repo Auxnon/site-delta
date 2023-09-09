@@ -176,6 +176,7 @@ export default class AppShell {
   /** fit to whole screen */
   max() {
     // app-max
+    this.element.classList.remove("app-partial");
     this.element.classList.add("app-max");
     this.active = true;
     this.status = AppStatus.Full;
@@ -183,6 +184,7 @@ export default class AppShell {
   }
 
   partial(target: Container) {
+    this.element.classList.remove("app-max");
     this.element.classList.add("app-partial");
     this.active = true;
     this.status = AppStatus.Partial;
