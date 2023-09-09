@@ -74,8 +74,8 @@ export class System {
     if (this.targetMove) {
       NavLine.move();
       this.targetMove.pos = {
-        x: ev.clientX + this.targetMove.offset.x,
-        y: ev.clientY + this.targetMove.offset.y,
+        x: Math.round(ev.clientX + this.targetMove.offset.x),
+        y: Math.round(ev.clientY + this.targetMove.offset.y),
       };
 
       if (this.targetMove instanceof AppShell) {
