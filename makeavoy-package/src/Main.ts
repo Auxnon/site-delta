@@ -91,13 +91,14 @@ APPS[10] = new AppShell(
   main_container,
   10,
   "Brightness",
-  require("./assets/monitor.png"),
+  require("./assets/brightness.png"),
   () => {
-    UI.cursorMessage(
-      systemInstance.mousePos.x,
-      systemInstance.mousePos.y,
-      "Brightness"
-    );
+    document.body.classList.toggle("dark-mode");
+    // UI.cursorMessage(
+    //   systemInstance.mousePos.x,
+    //   systemInstance.mousePos.y,
+    //   "Brightness"
+    // );
   }
 );
 
