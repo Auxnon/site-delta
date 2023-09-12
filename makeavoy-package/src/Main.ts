@@ -78,9 +78,9 @@ APPS[8] = new AppShell(
   require("./assets/blog.png"),
   () => {
     UI.cursorMessage(
+      "Coming Soon",
       systemInstance.mousePos.x,
-      systemInstance.mousePos.y,
-      "Coming Soon"
+      systemInstance.mousePos.y
     );
   }
   // import(/* webpackChunkName: "App8Blog" */ "./apps/Blog")
@@ -94,9 +94,9 @@ APPS[9] = new AppShell(
   // import(/* webpackChunkName: "App9Monitor" */ "./apps/Monitor")
   () => {
     UI.cursorMessage(
+      "Coming Soon",
       systemInstance.mousePos.x,
-      systemInstance.mousePos.y,
-      "Coming Soon"
+      systemInstance.mousePos.y
     );
   }
 );

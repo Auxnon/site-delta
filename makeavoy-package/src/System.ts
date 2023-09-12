@@ -10,6 +10,7 @@ import * as NavLine from "./NavLine";
 import * as Signature from "./Signature";
 import { Cursor, Hover } from "./Cursor";
 import { initBackground } from "./Background";
+import { cursorMessage, systemMessage } from "./UI";
 
 export class System {
   currentApp?: AppShell;
