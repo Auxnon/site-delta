@@ -129,6 +129,7 @@ export class FolderContainer extends Container {
       // });
     } else {
       apps.forEach((app, i) => {
+        app.incrementPosition(this.staticOffset);
         app.constrain(cx, cy, rect.width, rect.height);
         if (app.isPartial()) {
           app.close();
@@ -152,6 +153,7 @@ export class FolderContainer extends Container {
   handleDrag(ev: PointerEvent) {
     this.offset = { x: this.pos.x - ev.clientX, y: this.pos.y - ev.clientY };
     this.isMoving = false;
+    this.element.classList.add("container--moving");
     systemInstance.containerDrag(this.id, this, ev);
   }
 
@@ -161,7 +163,6 @@ export class FolderContainer extends Container {
   }
 
   select(): void {
-    this.element.classList.add("container--moving");
     if (this.windowed) systemInstance.passivePartialOpen(this.id);
   }
 
