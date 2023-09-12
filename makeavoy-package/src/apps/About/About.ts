@@ -1,8 +1,9 @@
 import * as THREE from "three";
-import * as Main from "../Main";
-import * as UI from "../UI";
-import "../style/aboutStyle.css";
-import AppEnvironment from "../types/AppEnvironment";
+import * as Main from "../../Main";
+import * as UI from "../../UI";
+import "./about.scss";
+import AppEnvironment from "../../types/AppEnvironment";
+// import "./about.html";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
@@ -23,6 +24,7 @@ export default class About extends AppEnvironment {
   portfolioHolder;
   closeButton;
   holders: HTMLElement[] = [];
+  portraitMode: boolean = false;
 
   constructor(dom: HTMLElement, id: number) {
     super(dom, id);
@@ -37,7 +39,7 @@ export default class About extends AppEnvironment {
         .loadModel("assets/models/portrait.glb", undefined, undefined, true)
         .then((m) => {
           this.portrait = m;
-          m.position.set(0, -175, 96.5);
+          m.position.set(0, -186, 96.5);
           // m.scale.set(60, 60, 60);
           // window.portrait = this.portrait;
           // window.Render = Render;
@@ -59,7 +61,7 @@ export default class About extends AppEnvironment {
     // })
     //require('html-loader!./about.html');
 
-    fetch("./partials/about.html")
+    fetch("/apps/About/about.html")
       .then(function (response) {
         return response.text();
       })
@@ -79,6 +81,7 @@ export default class About extends AppEnvironment {
         // There was an error
         console.warn("Something went wrong.", err);
       });
+    this.checkAspect();
   }
 
   animate(delta: number) {
@@ -118,7 +121,7 @@ export default class About extends AppEnvironment {
     setTimeout(() => {
       if (this.main) {
         this.main.style.display = "initial";
-        this.fit();
+        this.normalize();
         void this.main.offsetWidth;
         this.main.style.opacity = "1";
         setTimeout(() => {
@@ -200,7 +203,7 @@ export default class About extends AppEnvironment {
     //   });
 
     setTimeout(() => {
-      this.fit();
+      this.normalize();
     }, 1); //make sure DOM is done
     let portraitHolder: HTMLElement = this.main.querySelector(
       ".portrait-holder"
@@ -246,24 +249,32 @@ export default class About extends AppEnvironment {
         this.selectSection(this.main.querySelector("section"));
       }
     });
-    window.addEventListener("resize", (ev) => {
-      //DEV FIX we shouldn't have an internal listener, that's just asking for trouble
-      if (this.resizeTimer) clearTimeout(this.resizeTimer);
-      this.resizeTimer = setTimeout(() => {
-        this.unhideOverlay();
-      }, 200);
-      this.hideOverlay();
-    });
+  }
+
+  resized(): void {
+    this.checkAspect();
+    this.unhideOverlay();
+  }
+
+  startResize(): void {
+    this.hideOverlay();
+  }
+  checkAspect() {
+    const newAspect = window.matchMedia("(max-aspect-ratio: 1/1)").matches;
+    if (newAspect != this.portraitMode) {
+      this.portraitMode = newAspect;
+      this.fitAll();
+    }
   }
 
   selectSection(section) {
     if (section) {
-      this.shrinkAll();
+      this.shrinkAll(section);
 
       let vid = section.querySelector("video");
       if (vid) vid.play();
 
-      this.portfolioHolder.style.overflowY = "hidden";
+      this.main.classList.add("portfolio-opened");
       section.className = "";
       section.style.left = "50%";
       this.closeButton.style.display = "block";
@@ -274,46 +285,77 @@ export default class About extends AppEnvironment {
       section.style.top =
         height / 2 + sHeight - section.parentElement.offsetTop - 64 + "px";
       section.focus();
+      section.style.zIndex = "3";
 
       this.currentSection = section;
-      this.clickerOverlay.classList.add("clicker-active");
-      setTimeout(() => this.fit(), 1);
+      // setTimeout(() => this.fit(), 1);
     } else this.closeAll();
   }
 
-  fit() {
-    this.main.querySelectorAll("section").forEach((section, i) => {
-      this.fitSection(section);
-    });
+  /** close clicker and resize all items */
+  normalize() {
+    this.fitAll();
     this.clickerOverlay.style.zIndex = 2;
   }
 
-  fitSection(section) {
+  fitAll() {
+    this.main.querySelectorAll("section").forEach((section, i) => {
+      this.fitSection(section);
+    });
+  }
+
+  fit() {}
+
+  fitSection(section: HTMLElement, immediate?: boolean) {
     section.scrollTo(0, 0);
     if (section.className == "shrink") {
-      let holder = this.holders[section.getAttribute("holderId")];
-      section.style.left =
-        holder.offsetLeft + 128 - section.offsetWidth / 2 + "px";
-      section.style.top = holder.offsetTop + "px";
-      section.style.zIndex = 0;
-    } else section.style.zIndex = 3;
+      const id = section.getAttribute("holderId");
+      if (!id) return;
+      let holder = this.holders[id];
+      const media = section.querySelector("img, video") as HTMLElement;
+      if (media) {
+        if (this.portraitMode) {
+          holder.style.height = `${media.offsetHeight}px`;
+          holder.style.flexBasis = "";
+        } else {
+          holder.style.flexBasis = `${media.offsetWidth}px`;
+          holder.style.height = "";
+        }
+      }
+      const timeout = immediate ? 0 : 1000 * Math.random();
+      setTimeout(() => {
+        section.style.left =
+          holder.offsetLeft +
+          holder.offsetWidth / 2 -
+          section.offsetWidth / 2 +
+          "px";
+        section.style.top = holder.offsetTop + "px";
+        section.style.zIndex = "0";
+        console.log("fit srhink section " + section.innerText);
+      }, timeout);
+    } else section.style.zIndex = "3";
   }
 
   loadListener(ev) {
-    this.fitSection(ev.target.parentElement);
+    const content = ev.target;
+    const section = content.parentElement;
+    // const holder = this.holders[section.getAttribute("holderId")];
+    // holder.style.flexBasis = `${content.offsetWidth}px`;
+    this.fitSection(content.parentElement);
     if (ev.target["videoHeight"] == undefined)
       ev.target.removeEventListener("load", this.loadListener);
     else ev.target.removeEventListener("loadeddata", this.loadListener);
     // console.log("late load");
   }
 
-  shrinkAll() {
+  shrinkAll(skip?: HTMLElement) {
     this.main.querySelectorAll("section").forEach((s) => {
-      if (s.className != "shrink") {
+      if (s.className != "shrink" && s != skip) {
         s.className = "shrink";
         s.removeEventListener("scroll", this.sectionScrollChecker);
         let vid = s.querySelector("video");
         if (vid) vid.pause();
+        this.fitSection(s, true);
       }
     });
   }
@@ -321,11 +363,9 @@ export default class About extends AppEnvironment {
   closeAll() {
     this.shrinkAll();
 
-    this.portfolioHolder.style.overflowY = "";
+    this.main.classList.remove("portfolio-opened");
     this.currentSection = null;
-    this.clickerOverlay.classList.remove("clicker-active");
     this.closeButton.style.display = "";
-    setTimeout(() => this.fit(), 1);
   }
 
   hideOverlay() {
@@ -334,7 +374,7 @@ export default class About extends AppEnvironment {
   }
 
   unhideOverlay() {
-    this.fit();
+    this.normalize();
     this.overlay.style.opacity = 1;
   }
 

@@ -16,6 +16,7 @@ export class System {
   positionalData = { x: 0, y: 0 };
   targetMove?: AppShell | Container = undefined;
   resizeDebouncer?: number;
+  resizing: boolean = false;
   appPoints: { x: number; y: number; app?: AppShell }[] = [];
   containers: Container[] = [];
   containersHash: { [key: number]: Container } = {};
@@ -196,28 +197,49 @@ export class System {
   }
 
   resize(force?: boolean) {
+    if (!this.resizing) {
+      this.resizing = true;
+      this.startResizeProcess();
+    }
+    clearTimeout(this.resizeDebouncer);
+    if (force) {
+      this.resizedProcess();
+    } else {
+      this.resizeDebouncer = window.setTimeout(
+        () => this.resizedProcess(),
+        400
+      );
+    }
+  }
+
+  private resizedProcess() {
+    this.resizing = false;
     this.mobilePortrait = window.matchMedia(
       "(min-width: 600px) and (orientation: landscape)"
     ).matches;
 
-    clearTimeout(this.resizeDebouncer);
-    if (force) {
-      this.resizeProcess();
-    } else {
-      this.resizeDebouncer = window.setTimeout(() => this.resizeProcess(), 400);
-    }
-  }
-
-  private resizeProcess() {
     NavLine.resize(document.body.offsetWidth, document.body.offsetHeight);
     Signature.resize(document.body.offsetWidth, document.body.offsetHeight);
 
     this.containers.forEach((c) => c.resize());
     this.getBar().barAdjust(this.mainTitle);
     this.calculatePlacements();
+    APPS.forEach((app) => {
+      if (app && app.active) {
+        app.resized();
+      }
+    });
 
     Main.rendererPromise.then((r) => r.resize());
     //UI.systemMessage('inner ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
+  }
+
+  private startResizeProcess() {
+    APPS.forEach((app) => {
+      if (app && app.active) {
+        app.startResize();
+      }
+    });
   }
 
   animate() {

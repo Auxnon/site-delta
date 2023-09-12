@@ -54,10 +54,11 @@ module.exports = (env, argv) => {
         ],
         verbose: true,
       }),
-      new HtmlWebpackPlugin({ template: "./src/index.html" }),
+      new HtmlWebpackPlugin({ template: "./src/index.html", hash: true }),
       new HtmlWebpackPlugin({
-        filename: "partials/about.html",
-        template: "./src/about.html",
+        filename: "apps/About/about.html",
+        template: "./src/apps/About/about.html",
+        hash: true,
       }),
       // new SitemapPlugin({
       //   base: "https://MakeAvoy.com",

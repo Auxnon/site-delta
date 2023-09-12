@@ -38,4 +38,6 @@ export default abstract class AppEnvironment {
   //called when app is closed out for another one
   close() {}
   adjust(amount: number) {}
+  resized() {}
+  startResize() {}
 }

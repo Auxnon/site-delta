@@ -254,6 +254,11 @@ export default class AppShell {
     this.element.style.left = x + "px";
     this.element.style.top = y + "px";
   }
+  incrementPosition(p: Position) {
+    this.pos.x += p.x;
+    this.pos.y += p.y;
+    this.draw();
+  }
   resetMagnet() {
     this.magnetPos = { x: this.pos.x, y: this.pos.y };
   }
@@ -263,6 +268,22 @@ export default class AppShell {
   draw() {
     this.element.style.left = this.pos.x + "px";
     this.element.style.top = this.pos.y + "px";
+  }
+  startResize() {
+    if (this.active)
+      this.instancePromise?.then((instance) => {
+        if (instance instanceof AppEnvironment) {
+          instance.startResize();
+        }
+      });
+  }
+  resized() {
+    if (this.active)
+      this.instancePromise?.then((instance) => {
+        if (instance instanceof AppEnvironment) {
+          instance.resized();
+        }
+      });
   }
 
   /** assure element is within parameters of x,y,width, and height */
