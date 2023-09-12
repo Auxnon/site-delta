@@ -342,6 +342,7 @@ export class System {
 
     if (this.containers.length == 2) {
       this.containers[1].center();
+      this.containers[1].resetStaticPosition();
     } else {
       const count = this.containers.length - 1;
       const width = document.body.offsetWidth;
@@ -352,6 +353,7 @@ export class System {
         this.containers.forEach((c, i) => {
           if (i > 0) {
             c.move((i - 0.5) * w, h);
+            c.resetStaticPosition();
           }
         });
       } else {
@@ -360,6 +362,7 @@ export class System {
         this.containers.forEach((c, i) => {
           if (i > 0) {
             c.move(w, (i - 0.5 - 0.2 * (i - 1)) * h);
+            c.resetStaticPosition();
           }
         });
       }
@@ -483,7 +486,7 @@ export class System {
   switchApp(id: number | string | AppShell) {
     if (typeof id === "object") {
       if (this.currentApp != id) this.closeApp();
-      this.openApp(id);
+      if (this.openApp(id))
       window.location.hash = `#${id.instanceClass.toLowerCase()}`;
     } else {
       let numeric_id = 0;
@@ -493,26 +496,30 @@ export class System {
       } else {
         numeric_id = id;
       }
-      this.openApp(numeric_id);
+      if (this.openApp(numeric_id)) {
       let hashString = Object.keys(APP_IDS).find(
         (key) => APP_IDS[key] == numeric_id
       );
       if (hashString) window.location.hash = `#${hashString}`;
     }
   }
+  }
 
-  async openApp(id: number | AppShell) {
+  openApp(id: number | AppShell): boolean {
+    this.checkWrite();
     let app;
     if (typeof id === "number") {
       app = APPS[id];
-      if (!app) return;
+      if (!app) return false;
     } else {
       app = id;
     }
     if (app.open()) {
       this.currentApp = app;
       document.body.classList.add("full-app");
+      return true;
     }
+    return false;
   }
 
   passivePartialOpen(containerId: number) {

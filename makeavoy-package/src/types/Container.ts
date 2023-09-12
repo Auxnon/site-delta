@@ -9,6 +9,10 @@ export abstract class Container {
   pos: Position = { x: 0, y: 0 };
   offset: Position = { x: 0, y: 0 };
   isMoving: boolean = false;
+  /** A static position between UI calculations to let any contained apps know what to base any new relative positions on */
+  staticPos: Position = { x: 0, y: 0 };
+  /** Calculated offset between staticPos and pos */
+  staticOffset: Position = { x: 0, y: 0 };
   constructor(protected id: number, target: HTMLElement) {
     this.element.id = `container-${id}`;
     this.element.classList.add("container");
@@ -86,6 +90,7 @@ export abstract class Container {
   draw() {
     this.element.style.left = this.pos.x + "px";
     this.element.style.top = this.pos.y + "px";
+    console.log("redraw");
   }
 
   resize() {
@@ -103,6 +108,13 @@ export abstract class Container {
     this.pos.x = x;
     this.pos.y = y;
     this.draw();
+  }
+  resetStaticPosition() {
+    this.staticOffset = {
+      x: this.pos.x - this.staticPos.x,
+      y: this.pos.y - this.staticPos.y,
+    };
+    this.staticPos = { x: this.pos.x, y: this.pos.y };
   }
   destroy() {
     this.element.remove();
