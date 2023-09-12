@@ -117,12 +117,12 @@ APPS[11] = new AppShell(
   "Edit",
   require("./assets/edit.png"),
   () => {
-    // alert("Edit");
-    UI.cursorMessage(
-      systemInstance.mousePos.x,
-      systemInstance.mousePos.y,
-      "Coming Soon"
-    );
+    systemInstance.startWrite();
+    // UI.cursorMessage(
+    //   systemInstance.mousePos.x,
+    //   systemInstance.mousePos.y,
+    //   "Coming Soon"
+    // );
   }
 );
 

@@ -28,6 +28,7 @@ export class System {
   mainBody: HTMLElement;
   mainTitle: HTMLElement;
   mobilePortrait: boolean = false;
+  writing: boolean = false;
   /** sets whether apps are sorted in a row or allow free movements */
 
   constructor() {
@@ -488,7 +489,7 @@ export class System {
     if (typeof id === "object") {
       if (this.currentApp != id) this.closeApp();
       if (this.openApp(id))
-      window.location.hash = `#${id.instanceClass.toLowerCase()}`;
+        window.location.hash = `#${id.instanceClass.toLowerCase()}`;
     } else {
       let numeric_id = 0;
       if (typeof id === "string") {
@@ -498,12 +499,12 @@ export class System {
         numeric_id = id;
       }
       if (this.openApp(numeric_id)) {
-      let hashString = Object.keys(APP_IDS).find(
-        (key) => APP_IDS[key] == numeric_id
-      );
-      if (hashString) window.location.hash = `#${hashString}`;
+        let hashString = Object.keys(APP_IDS).find(
+          (key) => APP_IDS[key] == numeric_id
+        );
+        if (hashString) window.location.hash = `#${hashString}`;
+      }
     }
-  }
   }
 
   openApp(id: number | AppShell): boolean {
@@ -533,11 +534,26 @@ export class System {
 
   /** Open partially if not a one-off, returns false if one-off function */
   openPartial(app: AppShell, container?: Container): boolean {
+    this.checkWrite();
     if (app.openPartial(container)) {
       this.currentApp = app;
       return true;
     }
     return false;
+  }
+
+  checkWrite() {
+    if (this.writing) {
+      Signature.bake();
+    }
+  }
+
+  startWrite() {
+    if (!this.writing) {
+      Signature.newArt();
+      cursorMessage("Start Drawing!", this.mousePos.x, this.mousePos.y - 64);
+    }
+    this.writing = !this.writing;
   }
 
   closeApp() {

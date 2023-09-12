@@ -276,15 +276,13 @@ function draw(mouse: Position, throttle: boolean) {
   path.setAttribute("d", d);
 }
 
-function bake() {
+export function bake() {
   let start = points[0].t;
   points.forEach((p) => (p.t -= start));
   console.log(JSON.stringify(points));
   timer = 0;
   rendering = true;
 }
-// @ts-ignore
-window.bake = bake;
 
 function rnd() {
   return Math.random() * 10 - 5;
