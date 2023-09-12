@@ -52,7 +52,7 @@ APPS[4] = new AppShell(
   4,
   "About",
   require("./assets/about.png"),
-  import(/* webpackChunkName: "AboutApp" */ "./apps/About")
+  import(/* webpackChunkName: "AboutApp" */ "./apps/About/About")
 );
 
 // APPS[5] = new AppShell(
