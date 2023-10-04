@@ -39,6 +39,7 @@ body {
   background-color: rgb(243, 239, 227);
   stroke: white;
   font-family: sans-serif;
+  --paper-color: rgb(243, 239, 227);
   --panel-bg-color: black;
   --hard-red: rgb(251, 168, 168);
   --hard-green: rgb(181, 214, 145);
@@ -52,12 +53,13 @@ body {
 
   &.dark-mode {
     background-color: rgb(47, 12, 48);
+    --paper-color: rgb(47, 12, 48);
     --panel-bg-color: rgb(125, 57, 123);
     --hard-red: rgb(78, 3, 3);
     --hard-green: rgb(60, 82, 35);
     --hard-blue: rgb(4, 32, 91);
-    --shadow1: #fff3;
-    --shadow2: #8884;
+    --shadow1: #0003;
+    --shadow2: #fff1;
   }
 }
 
@@ -149,9 +151,9 @@ button {
   stroke: rgb(148, 98, 196);
   mix-blend-mode: difference;
   z-index: 1;
-  .full-app & {
-    transform: translate(-40%, -20%) scale(0.5);
-  }
+  // .full-app & {
+  //   transform: translate(-40%, -20%) scale(0.5);
+  // }
 }
 
 .canvas-holder {

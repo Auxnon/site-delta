@@ -54,6 +54,7 @@ APPS[4] = new AppShell(
   require("./assets/about.png"),
   import(/* webpackChunkName: "AboutApp" */ "./apps/About/About")
 );
+APPS[4].sizeOverride = { width: 200, height: 200 };
 
 // APPS[5] = new AppShell(
 //   main_container,

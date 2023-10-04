@@ -1,3 +1,4 @@
+$mobile-width: 600px;
 main {
   position: absolute;
   width: 100%;
@@ -11,47 +12,7 @@ main {
   color: white;
   transition: opacity 0.2s;
   touch-action: pan-y;
-  .portrait-holder {
-    position: absolute;
-    height: 256px;
-    margin: 16px 0;
-    top: 0;
-    left: 50%;
-    transform: translate(-50%);
-    transition: height 0.2s;
-    .portrait-back {
-      position: relative;
-      width: 256px;
-      height: 256px;
-      border-radius: 128px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 12 12'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='cyan' %3E%3Cpath d='M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      transition: transform;
-      &:before {
-        content: "";
-        width: 256px;
-        height: 256px;
-        left: -12px;
-        top: -6px;
-        border-radius: 128px;
-        position: absolute;
-        z-index: -1;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 12 12'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='magenta' %3E%3Cpath d='M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      }
-      .portrait {
-        position: absolute;
-        width: 240px;
-        height: 240px;
-        border-radius: 128px;
-        /*background: red;*/
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-      }
-    }
-  }
+  --about-shadow: 10px 10px 20px var(--shadow1), -10px -4px 16px var(--shadow2);
 
   a {
     background-color: #fad961;
@@ -74,14 +35,15 @@ main {
     }
     &.site-link,
     &.mail-link {
-      background-color: #5afc67;
-      background-image: linear-gradient(150deg, #5afc67 0%, #0095ed 100%);
+      background-color: #00dbde;
+      background-image: linear-gradient(315deg, #00dbde 0%, #fc00ff 100%);
     }
     &.mail-link {
-      position: absolute;
+      position: relative;
       left: 0;
-      transform: translate(-100%);
       padding-left: 40px;
+      left: 50%;
+      transform: translate(-50%);
       &:after {
         position: absolute;
         content: "";
@@ -139,7 +101,7 @@ main {
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
-    height: calc(100%);
+    height: 100%;
     transition: height 0.2s;
 
     .portfolio-overlay,
@@ -157,10 +119,9 @@ main {
       flex-flow: row wrap;
       justify-content: center;
       align-content: flex-start;
-      margin-bottom: 320px;
       width: 100%;
       height: auto;
-      @media (max-aspect-ratio: 1/1) {
+      @media (max-aspect-ratio: 1/1) and (max-device-width: $mobile-width) {
         // flex-flow: column wrap;
         display: block;
         // justify-content: space-evenly;
@@ -169,7 +130,7 @@ main {
         column-fill: autos;
       }
       .section-holder {
-        flex: 0 0 auto;
+        flex: 1 1 auto;
         flex-basis: 128px;
         // flex-grow: 1;
         // width: 144px;
@@ -177,7 +138,8 @@ main {
         border-radius: 16px;
         display: inline-block;
         position: relative;
-        border: dashed #0005 6px;
+        // border: dashed #0005 6px;
+        background-color: #0001;
         box-sizing: border-box;
         margin: 8px;
         transform: scale(0.5);
@@ -185,7 +147,7 @@ main {
           margin-bottom: 256px;
         }
 
-        @media (max-aspect-ratio: 1/1) {
+        @media (max-aspect-ratio: 1/1) and (max-device-width: $mobile-width) {
           width: 100%;
           margin: 8px 0;
           height: initial;
@@ -197,20 +159,84 @@ main {
         flex: 0 0 auto;
         height: 256px;
         pointer-events: auto;
+        margin-bottom: 180px;
 
-        @media (max-aspect-ratio: 1/1) {
+        @media (max-aspect-ratio: 1/1) and (max-device-width: $mobile-width) {
           column-span: all;
         }
-        .contact-panel-center {
+        .contact-card {
           position: relative;
-          width: 32px;
+          width: 512px;
+          height: 256px;
+          background: var(--paper-color);
+          box-shadow: var(--about-shadow);
+          border-radius: 16px;
           left: 50%;
           transform: translate(-50%);
+          & > div {
+            display: inline-block;
+            margin: 16px;
+            width: 12.5em;
+          }
+          p {
+            color: black;
+            text-shadow: none;
+          }
+          .portrait-holder {
+            position: absolute;
+            height: 200px;
+            margin: 28px 0;
+            top: 0;
+            right: 0;
+            transition: height 0.2s;
+            .portrait-back {
+              position: relative;
+              width: 200px;
+              height: 200px;
+              border-radius: 128px;
+              background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 12 12'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='cyan' %3E%3Cpath d='M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+              left: 50%;
+              top: 50%;
+              transform: translate(-50%, -50%);
+              transition: transform;
+              &:before {
+                content: "";
+                width: 200px;
+                height: 200px;
+                left: -12px;
+                top: -6px;
+                border-radius: 128px;
+                position: absolute;
+                z-index: -1;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 12 12'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='magenta' %3E%3Cpath d='M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+              }
+              .portrait {
+                position: absolute;
+                width: 184px;
+                height: 184px;
+                border-radius: 128px;
+                /*background: red;*/
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+              }
+            }
+
+            .canvas-holder {
+              height: 200px;
+              width: 200px;
+              border-radius: 128px;
+              transform: translate(-50%, -50%);
+              left: 50%;
+              top: 50%;
+            }
+          }
         }
       }
     }
     .portfolio-overlay {
       margin-top: 256px;
+      height: initial;
       pointer-events: none;
       * {
         // opacity: 1;
@@ -228,8 +254,7 @@ main {
         overflow-x: hidden;
         overflow-y: auto;
         transition: left 0.3s, top 0.3s, transform 0.6s;
-        box-shadow: 10px 10px 20px var(--shadow1),
-          -10px -4px 16px var(--shadow2);
+        box-shadow: var(--about-shadow);
         left: 50%;
         transform: translate(-50%, -50%);
         background: #000c;
@@ -257,7 +282,7 @@ main {
                     height: 0;
                     transform: initial;*/
 
-          @media (max-aspect-ratio: 1/1) {
+          @media (max-aspect-ratio: 1/1) and (max-device-width: $mobile-width) {
             width: calc(50% - 16px);
             height: auto;
           }
@@ -268,7 +293,7 @@ main {
           & img {
             width: auto; /*256px;*/
             height: 144px;
-            @media (max-aspect-ratio: 1/1) {
+            @media (max-aspect-ratio: 1/1) and (max-device-width: $mobile-width) {
               width: 100%;
               height: auto;
             }

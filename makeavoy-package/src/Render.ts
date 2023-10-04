@@ -156,6 +156,7 @@ export class Renderer {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setPixelRatio(1); //window.devicePixelRatio / SIZE_DIVIDER);
+    this.currentCanvas().style.width;
     this.renderer.setSize(this.docWidth, this.docHeight);
   }
 
@@ -163,8 +164,10 @@ export class Renderer {
     let delta = time - this.lastTime;
     delta /= 1000.0;
     this.lastTime = time;
-    this.activeApp?.animate(delta);
-    this.renderer.render(this.getScene(), this.camera);
+    if (this.activeApp) {
+      this.activeApp.animate(delta);
+      this.renderer.render(this.getScene(), this.camera);
+    }
     //composer.render();
     requestAnimationFrame((i) => this.animate(i));
   }
@@ -229,6 +232,7 @@ export class Renderer {
     vector.y = -(vector.y * heightHalf) + heightHalf;
     return vector;
   }
+
   getCamera() {
     return this.camera;
   }
@@ -242,6 +246,7 @@ export class Renderer {
       return this.betaCanvas;
     }
   }
+
   currentCanvas() {
     if (!this.canvasToggle) {
       return this.alphaCanvas;
@@ -271,6 +276,24 @@ export class Renderer {
 
     // canvas.style.opacity = "1";
     canvas.querySelectorAll("#afterImage").forEach((e) => e.remove());
+
+    if (shell.sizeOverride) {
+      this.overrideWidth = shell.sizeOverride.width;
+      this.overrideHeight = shell.sizeOverride.height;
+    } else if (shell.isPartial()) {
+      const rect = shell.getPartialSize();
+      if (rect) {
+        this.overrideWidth = rect.width;
+        this.overrideHeight = rect.height;
+      } else {
+        this.overrideWidth = 0;
+        this.overrideHeight = 0;
+      }
+    } else {
+      this.overrideWidth = 0;
+      this.overrideHeight = 0;
+    }
+    this.resize();
 
     shell.applyCanvas(canvas);
   }

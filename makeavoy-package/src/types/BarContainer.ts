@@ -167,7 +167,7 @@ export class BarContainer extends Container {
     if (target.isMoving) {
       //called once per state change
       target.isMoving = false;
-      target.containerId = 0;
+      target.setContainerId(0);
       target.element.style.zIndex = "1";
     }
     return true;

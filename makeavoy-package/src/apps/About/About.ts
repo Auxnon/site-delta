@@ -24,7 +24,13 @@ export default class About extends AppEnvironment {
   portfolioHolder;
   closeButton;
   holders: HTMLElement[] = [];
+
+  holderSizes: number[] = [];
+  timeouts: NodeJS.Timeout[] = [];
   portraitMode: boolean = false;
+  doubleChecker: number = 0;
+  checkIterator: number = 0;
+  fitDelay?: NodeJS.Timeout;
 
   constructor(dom: HTMLElement, id: number) {
     super(dom, id);
@@ -39,13 +45,10 @@ export default class About extends AppEnvironment {
         .loadModel("assets/models/portrait.glb", undefined, undefined, true)
         .then((m) => {
           this.portrait = m;
-          m.position.set(0, -186, 96.5);
-          // m.scale.set(60, 60, 60);
-          // window.portrait = this.portrait;
-          // window.Render = Render;
-          // window.Main = Main;
+          m.position.set(0, -196, 95.5);
+          // @ts-ignore
+          window.portrait = this.portrait;
 
-          //m.rotation.y = -Math.PI / 2 //pi2 to pi
           this.scene.add(m);
           this.portrait.children.forEach((c) => {
             if (c.name == "Eye") this.eye = c;
@@ -55,11 +58,6 @@ export default class About extends AppEnvironment {
           window.portrait = this.portrait;
         });
     });
-    //import( /* webpackChunkName: "App4About" */ './about.html').then(module=>{
-    //  console.log('here')
-    //  console.log(module)
-    // })
-    //require('html-loader!./about.html');
 
     fetch("/apps/About/about.html")
       .then(function (response) {
@@ -75,20 +73,21 @@ export default class About extends AppEnvironment {
         this.initAbout(dom);
         this.emailFixer(dom);
         this.checkDone();
-        console.log("main done");
+        this.fitAll(true);
       })
       .catch(function (err) {
         // There was an error
         console.warn("Something went wrong.", err);
       });
     this.checkAspect();
+    this.fitAll(true);
   }
 
   animate(delta: number) {
     if (this.portrait) {
       let pos = Main.systemInstance.getPosPercent();
       this.portrait.rotation.y = (-0.25 + pos.x / 2.0) * Math.PI;
-      this.portrait.rotation.x = (0.5 + pos.y / 6.0) * Math.PI;
+      this.portrait.rotation.x = (0.25 + pos.y / 6.0) * Math.PI;
       if (this.eye) {
         this.eyeTimer++;
         if (this.eyeTimer > 200 && this.eyeTimer < 220) {
@@ -98,6 +97,23 @@ export default class About extends AppEnvironment {
           this.eye.scale.set(1, v, 1);
         } else if (this.eyeTimer >= 220) this.eyeTimer = 0;
       }
+    }
+
+    this.doubleChecker++;
+    if (this.doubleChecker > 100) {
+      this.doubleChecker = 0;
+
+      // const s = this.main.querySelectorAll("section");
+      // if (s.length > 0) {
+      //   this.checkIterator++;
+      //   console.log("check " + this.checkIterator);
+      //   const i = this.checkIterator % s.length;
+      //   this.fitSection(s[i], i);
+      //   if (this.checkIterator >= s.length) {
+      //     this.checkIterator = 0;
+      //   }
+      // }
+      this.fitAll(false);
     }
   }
 
@@ -177,7 +193,7 @@ export default class About extends AppEnvironment {
       section.className = "shrink";
 
       section.addEventListener("focus", (ev) => {
-        this.selectSection(ev.target);
+        this.selectSection(ev.target as HTMLElement);
       });
 
       section.addEventListener("click", (ev) => {
@@ -195,13 +211,6 @@ export default class About extends AppEnvironment {
     if (this.closeButton)
       this.closeButton.addEventListener("click", () => this.closeAll());
 
-    // TODO re-add chat
-    // let chatter = this.main.querySelector(".chat-link");
-    // if (chatter)
-    //   chatter.addEventListener("click", (ev) => {
-    //     Main.systemInstance.switchApp("chat"); //chat id
-    //   });
-
     setTimeout(() => {
       this.normalize();
     }, 1); //make sure DOM is done
@@ -209,17 +218,17 @@ export default class About extends AppEnvironment {
       ".portrait-holder"
     ) as any;
     this.portfolioHolder = this.main.querySelector(".portfolio-section-block");
-    this.portfolioHolder.addEventListener("scroll", (ev) => {
-      if (ev.target.scrollTop > 0) {
-        portraitHolder.style.height = "128px";
-        portraitHolder.style.transform = "translate(-50%) scale(0.5,0.5)";
-        //portfolioHolder.style.height='calc(100% - 128px)'
-      } else {
-        portraitHolder.style.height = "";
-        portraitHolder.style.transform = "";
-        //portfolioHolder.style.height=''
-      }
-    });
+    // this.portfolioHolder.addEventListener("scroll", (ev) => {
+    //   if (ev.target.scrollTop > 0) {
+    //     portraitHolder.style.height = "128px";
+    //     portraitHolder.style.transform = "translate(-50%) scale(0.5,0.5)";
+    //     //portfolioHolder.style.height='calc(100% - 128px)'
+    //   } else {
+    //     portraitHolder.style.height = "";
+    //     portraitHolder.style.transform = "";
+    //     //portfolioHolder.style.height=''
+    //   }
+    // });
     window.addEventListener("keydown", (ev) => {
       /*if(ev.which==32)
             fit();*/
@@ -254,20 +263,23 @@ export default class About extends AppEnvironment {
   resized(): void {
     this.checkAspect();
     this.unhideOverlay();
+    this.fitAll(true);
   }
 
   startResize(): void {
     this.hideOverlay();
   }
+
   checkAspect() {
-    const newAspect = window.matchMedia("(max-aspect-ratio: 1/1)").matches;
+    const newAspect = window.matchMedia(
+      "(max-aspect-ratio: 1/1) and (max-device-width: 600px)"
+    ).matches;
     if (newAspect != this.portraitMode) {
       this.portraitMode = newAspect;
-      this.fitAll();
     }
   }
 
-  selectSection(section) {
+  selectSection(section: HTMLElement | null | undefined) {
     if (section) {
       this.shrinkAll(section);
 
@@ -279,11 +291,15 @@ export default class About extends AppEnvironment {
       section.style.left = "50%";
       this.closeButton.style.display = "block";
       section.addEventListener("scroll", this.sectionScrollChecker);
-      let sHeight = section.parentElement.parentElement.scrollTop;
+      let sHeight = section.parentElement?.parentElement?.scrollTop || 0;
       let height = window.innerHeight; //section.parentElement.parentElement.offsetHeight
       //UI.systemMessage('sheight'+sHeight+' height '+height,'warn')
       section.style.top =
-        height / 2 + sHeight - section.parentElement.offsetTop - 64 + "px";
+        height / 2 +
+        sHeight -
+        (section.parentElement?.offsetTop || 0) -
+        64 +
+        "px";
       section.focus();
       section.style.zIndex = "3";
 
@@ -294,36 +310,62 @@ export default class About extends AppEnvironment {
 
   /** close clicker and resize all items */
   normalize() {
-    this.fitAll();
+    this.fitAll(false);
     this.clickerOverlay.style.zIndex = 2;
   }
 
-  fitAll() {
-    this.main.querySelectorAll("section").forEach((section, i) => {
-      this.fitSection(section);
+  fitAll(force: boolean, immediate?: boolean) {
+    if (!this.main) return;
+    const list = Array.from(this.main.querySelectorAll("section"));
+    const sizes = list.map((section, i) => {
+      const media = section.querySelector("img, video") as HTMLElement;
+      if (media) {
+        let ratio = 1;
+        if (media instanceof HTMLVideoElement) {
+          ratio = media.videoWidth / media.videoHeight;
+        } else if (media instanceof HTMLImageElement) {
+          ratio = media.naturalWidth / media.naturalHeight;
+        }
+
+        if (this.portraitMode) {
+          return media.offsetWidth / ratio;
+        } else {
+          const height = 144;
+          return height * ratio;
+        }
+      }
+      return 100;
+    });
+
+    if (!force && sizes.every((v, i) => v == this.holderSizes[i])) return;
+    console.log("%cFit All", "color: red");
+    console.log(sizes);
+    this.holderSizes = sizes;
+
+    list.forEach((section, i) => {
+      this.fitSection(section, i, immediate);
     });
   }
 
   fit() {}
 
-  fitSection(section: HTMLElement, immediate?: boolean) {
+  fitSection(section: HTMLElement, i: number, immediate?: boolean) {
     section.scrollTo(0, 0);
+    if (this.timeouts[i]) clearTimeout(this.timeouts[i]);
     if (section.className == "shrink") {
       const id = section.getAttribute("holderId");
       if (!id) return;
       let holder = this.holders[id];
-      const media = section.querySelector("img, video") as HTMLElement;
-      if (media) {
-        if (this.portraitMode) {
-          holder.style.height = `${media.offsetHeight}px`;
-          holder.style.flexBasis = "";
-        } else {
-          holder.style.flexBasis = `${media.offsetWidth}px`;
-          holder.style.height = "";
-        }
+      const f = this.holderSizes[i];
+      if (this.portraitMode) {
+        holder.style.height = `${f}px`;
+        holder.style.flexBasis = "";
+      } else {
+        holder.style.flexBasis = `${f}px`;
+        holder.style.height = "";
       }
       const timeout = immediate ? 0 : 1000 * Math.random();
-      setTimeout(() => {
+      this.timeouts[i] = setTimeout(() => {
         section.style.left =
           holder.offsetLeft +
           holder.offsetWidth / 2 -
@@ -331,7 +373,6 @@ export default class About extends AppEnvironment {
           "px";
         section.style.top = holder.offsetTop + "px";
         section.style.zIndex = "0";
-        console.log("fit srhink section " + section.innerText);
       }, timeout);
     } else section.style.zIndex = "3";
   }
@@ -341,7 +382,7 @@ export default class About extends AppEnvironment {
     const section = content.parentElement;
     // const holder = this.holders[section.getAttribute("holderId")];
     // holder.style.flexBasis = `${content.offsetWidth}px`;
-    this.fitSection(content.parentElement);
+    this.fitAll(false);
     if (ev.target["videoHeight"] == undefined)
       ev.target.removeEventListener("load", this.loadListener);
     else ev.target.removeEventListener("loadeddata", this.loadListener);
@@ -355,9 +396,9 @@ export default class About extends AppEnvironment {
         s.removeEventListener("scroll", this.sectionScrollChecker);
         let vid = s.querySelector("video");
         if (vid) vid.pause();
-        this.fitSection(s, true);
       }
     });
+    this.fitAll(true);
   }
 
   closeAll() {
@@ -379,42 +420,25 @@ export default class About extends AppEnvironment {
   }
 
   emailFixer(dom) {
-    let fixerInterval;
-
     let emailButton = dom.querySelector(".mail-link");
 
-    function emailButtonOverride(ev) {
+    const emailButtonOverride = (ev) => {
       const str = "CWa[Wleo6]cW_b$Yec"; // crappy obfuscation
 
       let array = str.split("");
 
-      //if(ev.originalEvent !== undefined){
-      UI.systemMessage("Char shifting email (Anti-Spam)", "success");
+      let shiftedArray = array.map((val, i) => {
+        return String.fromCharCode(val.charCodeAt(0) + 10);
+      });
+      let newString = shiftedArray.join("");
+      window.location.href = "mailto:" + newString;
 
-      let counter = 0;
-      fixerInterval = setInterval(() => {
-        let shiftedArray = array.map((val, i) => {
-          return String.fromCharCode(val.charCodeAt(0) + counter);
-        });
-        let newString = shiftedArray.join("");
-        emailButton.innerText = newString; //''+Math.floor(Math.random()*Math.pow(10,18));
-        counter++;
-        if (counter > 10) {
-          clearInterval(fixerInterval);
-          emailButton.removeEventListener("click", emailButtonOverride);
-          emailButton.href = "mailto:" + newString;
-        }
-      }, 100);
-
-      //}
       ev.preventDefault();
       return false;
-    }
+    };
 
     emailButton.addEventListener("click", emailButtonOverride);
   }
 
-  sectionScrollChecker(ev) {
-    console.log("scroll" + ev.target.scrollTop);
-  }
+  sectionScrollChecker(ev) {}
 }

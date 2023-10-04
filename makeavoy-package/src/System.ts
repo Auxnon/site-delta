@@ -1,8 +1,6 @@
 import { Container } from "./types/Container";
 import * as Main from "./Main";
 import { APP_IDS, APPS } from "./Main";
-import { init } from "./RasterTool";
-import AppEnvironment from "./types/AppEnvironment";
 import AppShell from "./types/AppShell";
 import { BarContainer } from "./types/BarContainer";
 import { FolderContainer } from "./types/FolderContainer";
@@ -10,7 +8,7 @@ import * as NavLine from "./NavLine";
 import * as Signature from "./Signature";
 import { Cursor, Hover } from "./Cursor";
 import { initBackground } from "./Background";
-import { cursorMessage, systemMessage } from "./UI";
+import { cursorMessage } from "./UI";
 
 export class System {
   currentApp?: AppShell;
@@ -86,7 +84,7 @@ export class System {
           if (c.inBounds(ev.clientX, ev.clientY)) {
             if (c.dragOver(this.targetMove as AppShell)) {
               console.log("id", i);
-              (this.targetMove as AppShell).containerId = i;
+              (this.targetMove as AppShell).setContainerId(i);
               return true;
             }
           }
@@ -164,7 +162,7 @@ export class System {
         switch (this.cursor.getMode()) {
           case Hover.MakeContainer: {
             const id = this.makeContainer();
-            this.targetMove.containerId = id;
+            this.targetMove.setContainerId(id);
             setTimeout(() => {
               this.calculatePlacements();
             }, 1);
@@ -272,7 +270,7 @@ export class System {
   containerDrag(id: number, container: Container, ev: PointerEvent) {
     this.targetMove = container;
     for (let i = 0; i < APPS.length; i++) {
-      if (APPS[i] && APPS[i].containerId == id) {
+      if (APPS[i] && APPS[i].getContainerId() == id) {
         APPS[i].hide();
         // this.appPoints.push({ x: ev.clientX, y: ev.clientY, app: APPS[i] });
       }
@@ -374,24 +372,24 @@ export class System {
     const backupContainer = this.getFirstFolder();
     APPS.forEach((app) => {
       if (app) {
-        if (!this.containersHash[app.containerId]) {
+        if (!this.containersHash[app.getContainerId()]) {
           if (backupContainer) {
             const id = backupContainer.getId();
-            app.containerId = id;
+            app.setContainerId(id);
             if (!appLayers[id]) appLayers[id] = [];
             appLayers[id].push(app);
           } else {
-            this.getFirstFolder();
-            app.containerId = 0;
+            app.setContainerId(0);
             appLayers[0].push(app);
           }
-          if (this.currentApp !== app) {
+          if (app.isPartial() || this.currentApp !== app) {
             app.setZ();
-            app.close();
+            this.closeApp(app);
           }
         } else {
-          if (!appLayers[app.containerId]) appLayers[app.containerId] = [];
-          appLayers[app.containerId].push(app);
+          if (!appLayers[app.getContainerId()])
+            appLayers[app.getContainerId()] = [];
+          appLayers[app.getContainerId()].push(app);
         }
       }
     });
@@ -443,7 +441,7 @@ export class System {
     this.deleteContainer(target);
     const list: AppShell[] = [];
     APPS.forEach((app) => {
-      if (app && app.containerId == id) {
+      if (app && app.getContainerId() == id) {
         list.push(app);
       }
     });
@@ -470,7 +468,7 @@ export class System {
     const used = {};
     for (let i = 0; i < APPS.length; i++) {
       if (APPS[i]) {
-        used[APPS[i].containerId] = true;
+        used[APPS[i].getContainerId()] = true;
       }
     }
     for (let i = 1; i < this.containers.length; i++) {
@@ -524,9 +522,10 @@ export class System {
     return false;
   }
 
+  /** runs some focus logic when an app is open partially but wasn't being actively being used */
   passivePartialOpen(containerId: number) {
     APPS.forEach((app) => {
-      if (app && app.containerId == containerId) {
+      if (app && app.getContainerId() == containerId) {
         this.openPartial(app);
       }
     });
@@ -556,10 +555,15 @@ export class System {
     this.writing = !this.writing;
   }
 
-  closeApp() {
-    this.currentApp?.close();
-    this.currentApp = undefined;
+  closeApp(app?: AppShell) {
+    if (app) {
+      app.close();
+    } else {
+      this.currentApp?.close();
+      this.currentApp = undefined;
+    }
     window.history.pushState({}, "", "/");
+    if (Main.renderer) Main.renderer.activeApp = undefined;
 
     // this.mainTitle.classList.remove("shrink");
     document.body.classList.remove("full-app");

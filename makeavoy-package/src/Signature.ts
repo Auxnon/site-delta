@@ -242,10 +242,13 @@ function draw(mouse: Position, throttle: boolean) {
     }
     if (timer > points[points.length - 1].t) {
       complete = true;
-      if (throttle) {
-        timer--;
-        return;
-      }
+      // if (throttle) {
+      //   timer--;
+      //   return;
+      // }
+    }
+    if (complete && throttle) {
+      return;
     }
     wind += stagger ? 100 : 0.1;
     const w = document.body.clientWidth;

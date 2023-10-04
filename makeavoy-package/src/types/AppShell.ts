@@ -30,8 +30,13 @@ export default class AppShell {
   pos: Position = { x: 0, y: 0 };
   magnetPos: Position = { x: 0, y: 0 };
   /** ID represents a container object, 0 being the bar, 1 being the home screen, etc*/
-  containerId: number = 0;
+  private containerId: number = 0;
+  containerHistory?: number;
   failed: boolean = false;
+  /** a render override that always takes priority */
+  sizeOverride?: { width: number; height: number };
+  /** current size as dictated by a container in partial mode */
+  partialSize?: { width: number; height: number };
 
   /** Pass in parameters to create an app including the async module to load. Replace the module loader with a function instead to treat the app shell like a button*/
   constructor(
@@ -109,6 +114,7 @@ export default class AppShell {
   }
   /** runs open method, which is either an application or a singular one-off function. Returns false for one-offs*/
   open(): boolean {
+    this.reset();
     if (this.openHook) {
       this.openHook();
       return false;
@@ -122,14 +128,30 @@ export default class AppShell {
     return this.openHook != undefined;
   }
 
+  reset() {
+    this.partialSize = undefined;
+  }
+
+  /** set container id and set history of last container */
+  setContainerId(id: number) {
+    this.containerHistory = this.containerId;
+    this.containerId = id;
+  }
+
+  getContainerId() {
+    return this.containerId;
+  }
+
   openPartial(container?: Container): boolean {
     if (this.openHook) {
       return false;
     }
-    this.partial(systemInstance.getContainer(this.containerId));
+    if (container) {
+      this.partial(container);
+      this.partialSize = container.size;
+    }
     this.openLogic();
     if (container) this.centerTo(container);
-
     return true;
   }
 
@@ -162,6 +184,7 @@ export default class AppShell {
 
   /** runs app close procedures like minimize */
   close() {
+    this.reset();
     this.min();
   }
 
@@ -254,21 +277,26 @@ export default class AppShell {
     this.element.style.left = x + "px";
     this.element.style.top = y + "px";
   }
+
   incrementPosition(p: Position) {
     this.pos.x += p.x;
     this.pos.y += p.y;
     this.draw();
   }
+
   resetMagnet() {
     this.magnetPos = { x: this.pos.x, y: this.pos.y };
   }
+
   setMagnet(x: number, y: number) {
     this.magnetPos = { x, y };
   }
+
   draw() {
     this.element.style.left = this.pos.x + "px";
     this.element.style.top = this.pos.y + "px";
   }
+
   startResize() {
     if (this.active)
       this.instancePromise?.then((instance) => {
@@ -277,6 +305,7 @@ export default class AppShell {
         }
       });
   }
+
   resized() {
     if (this.active)
       this.instancePromise?.then((instance) => {
@@ -305,6 +334,10 @@ export default class AppShell {
     }
 
     this.draw();
+  }
+
+  getPartialSize() {
+    return this.partialSize;
   }
 
   // getScene() {
