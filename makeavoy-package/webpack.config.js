@@ -112,11 +112,15 @@ module.exports = (env, argv) => {
       runtimeChunk: "single",
       splitChunks: {
         cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: "vendors",
-            chunks: "all",
+          render: {
+            // three.js and Render.ts
+            test:
+              /[\\/]node_modules[\\/](three)[\\/]/ ||
+              /[\\/]src[\\/]Render[\\/]/,
+            name: "render",
+            chunks: "async",
           },
+
           lib: {
             test: path.resolve("src/lib"),
             name: "libs",
@@ -132,6 +136,11 @@ module.exports = (env, argv) => {
               return packageName;
             },
           },
+          // vendor: {
+          //   // test: /[\\/]node_modules[\\/]/,
+          //   name: "vendor",
+          //   chunks: "all",
+          // },
         },
       },
     },
