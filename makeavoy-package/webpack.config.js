@@ -35,7 +35,7 @@ module.exports = (env, argv) => {
   console.log("dev mode is " + devMode + " " + argv.mode);
 
   return {
-    mode: "production", //'production',
+    mode: devMode ? "development" : "production", //'production',
     entry: "./src/Main.ts",
     plugins: [
       new CleanWebpackPlugin({
