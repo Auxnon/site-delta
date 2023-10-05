@@ -171,7 +171,10 @@ export default class AppShell {
   /** provide the render canvas to this app shell, completing the opening processes */
   applyCanvas(canvas: HTMLElement) {
     let current = this.element.querySelector(".canvas-holder");
-    if (current == canvas) return;
+    if (current == canvas) {
+      this.loadInstance(canvas);
+      return;
+    }
     if (current) current.remove();
     this.element.appendChild(canvas);
 
@@ -189,9 +192,13 @@ export default class AppShell {
   }
 
   pend() {
-    let cube = document.querySelector("cube");
+    let cube = document.querySelector(".loader");
     if (!cube) {
-      cube = document.createElement("cube");
+      cube = document.createElement("div");
+      cube.classList.add("loader");
+      const cubeInner = document.createElement("cube");
+      cube.appendChild(cubeInner);
+
       this.element.appendChild(cube);
     }
   }
@@ -265,7 +272,7 @@ export default class AppShell {
   }
 
   clearPend() {
-    this.element.querySelector("cube")?.remove();
+    this.element.querySelector(".loader")?.remove();
     //x clearly we goofed something in the loading process, this only happens with portfolio?
     //  if (canvas) {
     //   this.element.appendChild(canvas);

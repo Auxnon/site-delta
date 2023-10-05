@@ -211,90 +211,121 @@ button {
   }
 }
 
+.loader {
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  position: absolute;
+  font-size: 32px;
+  color: white;
+  transform: translate(-50%, -50%);
+  text-shadow: 0 0 10px black;
+  text-align: center;
+  &:after {
+    transform: translate(-50%, 0);
+    left: 50%;
+    content: "Loading...";
+    position: absolute;
+    bottom: 0;
+  }
+}
 cube {
-  --s: 2s;
-  font-size: 50px;
+  --s: 1s;
   transform-style: preserve-3d;
-  content: "LO";
   top: 50%;
   left: 50%;
   position: absolute;
   width: 100px;
   height: 100px;
   background: center / cover no-repeat rgba(255, 0, 0, 0.3);
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><text font-family="arial" fill="black" x="0" y="18" font-size="18px">LO</text></svg>');
+  // background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="100" viewBox="0 0 100 100" width="100" ><text font-family="arial" fill="black" x="0" y="18" font-size="px">LOADING</text></svg>');
+  background-image: url("../assets/home.png");
+  background-size: 50px;
 
   transition: transform 1s;
   /*transform:  rotate(0,0,1, 10deg);*/
   animation: cube-spin-animation var(--s) linear forwards infinite;
-  border: 8px solid white;
+  // border: 1px solid white;
   box-sizing: border-box;
 }
 
 cube:before {
+  content: "";
   display: block;
-  content: "AD";
   width: 100px;
   height: 100px;
   line-height: 1.5;
   position: absolute;
   text-align: center;
-  background-color: rgba(0, 0, 255, 0.3);
-  transform: rotateX(90deg) translate3d(-8px, -50px, 58px);
-  border: 8px solid white;
+  background: center / cover no-repeat rgba(0, 0, 255, 0.3);
+  background-image: url("../assets/skull.png");
+  background-size: 50px;
+  transform: rotateX(90deg) translate3d(-0px, -50px, 50px);
   box-sizing: border-box;
-  animation: spin-extra var(--s) lienar forwards infinite;
 }
 
 cube:after {
+  content: "";
   display: block;
-  content: "ING";
   width: 100px;
   height: 100px;
-  line-height: 1.5;
+  line-height: 2;
   text-align: center;
 
   position: absolute;
-  background-color: rgba(0, 255, 0, 0.3);
-  transform: rotateY(90deg) translate3d(50px, -8px, 42px);
-  border: 8px solid white;
+  background: center / cover no-repeat rgba(0, 255, 0, 0.3);
+  background-image: url("../assets/about.png");
+  background-size: 50px;
+  transform: rotateY(90deg) translate3d(50px, -0px, 50px);
+  // border: 8px solid white;
   box-sizing: border-box;
 }
 
 @keyframes cube-spin-animation {
   0% {
-    transform: rotate3d(-1, -1, 1, 20deg) translate3d(-50%, -50%, 100px)
-      scale(0.9);
+    transform: rotate3d(0, 1, 0, 0deg) translate3d(-50px, -50px, 100px);
+  }
+  33% {
+    transform: rotate3d(0, 1, 0, -90deg) translate3d(-50px, -50px, 75px);
+  }
+  51% {
+    transform: rotate3d(1, 1, 0, -90deg) translate3d(-33px, -100px, 100px);
+  }
+  69% {
+    transform: rotate3d(1, 0, 0, -90deg) translate3d(-33px, -0px, 33px);
+  }
+  100% {
+    transform: rotate3d(1, 1, 0, 0deg) translate3d(-50px, -50px, 100px);
+  }
+}
+@keyframes cube-spin-animation2 {
+  0% {
+    transform: rotate3d(-1, -1, 1, 20deg) translate3d(-50%, -50%, 100px);
   }
 
   17% {
-    transform: rotate3d(0, -1, 0, 10deg) translate3d(-50%, -50%, 100px)
-      scale(1.1);
+    transform: rotate3d(0, -1, 0, 10deg) translate3d(-50%, -50%, 100px);
   }
 
   34% {
-    transform: rotate3d(-1, -0.1, -0.1, 70deg) translate3d(-50%, -50%, 20px)
-      scale(0.9);
+    transform: rotate3d(-1, -0.1, -0.1, 70deg) translate3d(-50%, -50%, 20px);
   }
 
   51% {
-    transform: rotate3d(-1, 0, 0, 80deg) translate3d(-50%, -50%, 20px)
-      scale(1.1);
+    transform: rotate3d(-1, 0, 0, 80deg) translate3d(-50%, -50%, 20px);
   }
 
   68% {
-    transform: rotate3d(-0.1, -1, 0.1, 70deg) translate3d(-50%, -50%, 100px)
-      scale(0.9);
+    transform: rotate3d(-0.1, -1, 0.1, 70deg) translate3d(-50%, -50%, 100px);
   }
 
   85% {
-    transform: rotate3d(0, -1, 0, 80deg) translate3d(-50%, -50%, 100px)
-      scale(1.1);
+    transform: rotate3d(0, -1, 0, 80deg) translate3d(-50%, -50%, 100px);
   }
 
   100% {
-    transform: rotate3d(-1, -1, 1, 20deg) translate3d(-50%, -50%, 100px)
-      scale(0.9);
+    transform: rotate3d(-1, -1, 1, 20deg) translate3d(-50%, -50%, 100px);
   }
 }
 
