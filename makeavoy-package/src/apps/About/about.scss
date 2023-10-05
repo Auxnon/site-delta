@@ -278,6 +278,7 @@ main {
           transform: none;
           left: 0;
           overflow: hidden;
+          background: #5555;
           /*left:0;
                     height: 0;
                     transform: initial;*/
@@ -304,7 +305,7 @@ main {
           position: relative;
           transform: translate(-50%);
           left: 50%;
-          background: #f0f5;
+          background: transparent;
           border-radius: 16px;
           width: auto;
           max-width: 100%;
