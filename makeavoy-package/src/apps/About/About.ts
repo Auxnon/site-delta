@@ -3,7 +3,6 @@ import * as Main from "../../Main";
 import * as UI from "../../UI";
 import "./about.scss";
 import AppEnvironment from "../../types/AppEnvironment";
-// import "./about.html";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
@@ -13,12 +12,9 @@ export default class About extends AppEnvironment {
   eye;
   eyeTimer = 0;
 
-  // non 3d fields
+  // non 3D fields
   main: HTMLElement;
   overlay;
-  resizeTimer;
-  //let px = 0;
-  //let moveTarget;
   currentSection;
   clickerOverlay;
   portfolioHolder;
@@ -67,20 +63,18 @@ export default class About extends AppEnvironment {
         // This is the HTML from our response as a text string
 
         dom.insertAdjacentHTML("beforeend", html);
-        /*dom.addEventListener("DOMContentLoaded", function(){
-            console.log('TEST7') //FIX
-        })*/
+
         this.initAbout(dom);
         this.emailFixer(dom);
         this.checkDone();
-        this.fitAll(true);
+        this.fitAllSections(true);
       })
       .catch(function (err) {
         // There was an error
         console.warn("Something went wrong.", err);
       });
     this.checkAspect();
-    this.fitAll(true);
+    this.fitAllSections(true);
   }
 
   animate(delta: number) {
@@ -100,37 +94,22 @@ export default class About extends AppEnvironment {
     }
 
     this.doubleChecker++;
-    if (this.doubleChecker > 100) {
+    if (this.doubleChecker > 1000) {
       this.doubleChecker = 0;
 
-      // const s = this.main.querySelectorAll("section");
-      // if (s.length > 0) {
-      //   this.checkIterator++;
-      //   console.log("check " + this.checkIterator);
-      //   const i = this.checkIterator % s.length;
-      //   this.fitSection(s[i], i);
-      //   if (this.checkIterator >= s.length) {
-      //     this.checkIterator = 0;
-      //   }
-      // }
-      this.fitAll(false);
+      this.fitAllSections(false);
     }
   }
 
   deinit() {}
 
   open(canvas?: HTMLElement) {
-    //main.querySelector()
     Main.systemInstance.shrinkTitle();
 
-    //console.log('opened')
-    //UI.systemMessage('test ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
     if (this.main && canvas) {
       let holder = this.main.querySelector(".portrait-holder");
 
-      // canvas.custom = 256;
       if (holder) holder.appendChild(canvas);
-      Main.renderer?.resize();
     }
 
     this.hideOverlay();
@@ -160,8 +139,7 @@ export default class About extends AppEnvironment {
       setTimeout(() => {
         this.main.style.display = "none";
       }, 200);
-      Main.renderer?.resize();
-      this.closeAll();
+      this.closeAllSections();
     }
   }
 
@@ -206,10 +184,12 @@ export default class About extends AppEnvironment {
       if (video)
         video.addEventListener("loadeddata", (ev) => this.loadListener(ev));
     });
-    this.clickerOverlay.addEventListener("click", () => this.closeAll());
+    this.clickerOverlay.addEventListener("click", () =>
+      this.closeAllSections()
+    );
     this.closeButton = this.main.querySelector("#close-button");
     if (this.closeButton)
-      this.closeButton.addEventListener("click", () => this.closeAll());
+      this.closeButton.addEventListener("click", () => this.closeAllSections());
 
     setTimeout(() => {
       this.normalize();
@@ -236,7 +216,7 @@ export default class About extends AppEnvironment {
 
       if (this.currentSection) {
         if (ev.which == 27) {
-          this.closeAll();
+          this.closeAllSections();
         } else if (ev.which == 37) {
           //left
           if (
@@ -263,7 +243,7 @@ export default class About extends AppEnvironment {
   resized(): void {
     this.checkAspect();
     this.unhideOverlay();
-    this.fitAll(true);
+    this.fitAllSections(true);
   }
 
   startResize(): void {
@@ -281,19 +261,17 @@ export default class About extends AppEnvironment {
 
   selectSection(section: HTMLElement | null | undefined) {
     if (section) {
-      this.shrinkAll(section);
+      this.shrinkAllSections(section);
 
       let vid = section.querySelector("video");
-      if (vid) vid.play();
+      if (vid) vid.play().catch((_e) => {});
 
       this.main.classList.add("portfolio-opened");
       section.className = "";
       section.style.left = "50%";
       this.closeButton.style.display = "block";
-      section.addEventListener("scroll", this.sectionScrollChecker);
       let sHeight = section.parentElement?.parentElement?.scrollTop || 0;
       let height = window.innerHeight; //section.parentElement.parentElement.offsetHeight
-      //UI.systemMessage('sheight'+sHeight+' height '+height,'warn')
       section.style.top =
         height / 2 +
         sHeight -
@@ -304,17 +282,16 @@ export default class About extends AppEnvironment {
       section.style.zIndex = "3";
 
       this.currentSection = section;
-      // setTimeout(() => this.fit(), 1);
-    } else this.closeAll();
+    } else this.closeAllSections();
   }
 
   /** close clicker and resize all items */
   normalize() {
-    this.fitAll(false);
+    this.fitAllSections(false);
     this.clickerOverlay.style.zIndex = 2;
   }
 
-  fitAll(force: boolean, immediate?: boolean) {
+  fitAllSections(force: boolean, immediate?: boolean) {
     if (!this.main) return;
     const list = Array.from(this.main.querySelectorAll("section"));
     const sizes = list.map((section, i) => {
@@ -349,10 +326,10 @@ export default class About extends AppEnvironment {
 
   fit() {}
 
-  fitSection(section: HTMLElement, i: number, immediate?: boolean) {
+  fitSection(section: HTMLElement, i: number, immediate?: boolean | number) {
     section.scrollTo(0, 0);
     if (this.timeouts[i]) clearTimeout(this.timeouts[i]);
-    if (section.className == "shrink") {
+    if (section.className === "shrink") {
       const id = section.getAttribute("holderId");
       if (!id) return;
       let holder = this.holders[id];
@@ -364,7 +341,16 @@ export default class About extends AppEnvironment {
         holder.style.flexBasis = `${f}px`;
         holder.style.height = "";
       }
-      const timeout = immediate ? 0 : 1000 * Math.random();
+      let timeout = 0;
+      if (
+        (Number.isInteger(immediate) && immediate === i) ||
+        immediate === true
+      ) {
+        timeout = 0;
+      } else {
+        timeout = 1000 * Math.random();
+      }
+
       this.timeouts[i] = setTimeout(() => {
         section.style.left =
           holder.offsetLeft +
@@ -380,30 +366,26 @@ export default class About extends AppEnvironment {
   loadListener(ev) {
     const content = ev.target;
     const section = content.parentElement;
-    // const holder = this.holders[section.getAttribute("holderId")];
-    // holder.style.flexBasis = `${content.offsetWidth}px`;
-    this.fitAll(false);
+    this.fitAllSections(false);
     if (ev.target["videoHeight"] == undefined)
       ev.target.removeEventListener("load", this.loadListener);
     else ev.target.removeEventListener("loadeddata", this.loadListener);
-    // console.log("late load");
   }
 
-  shrinkAll(skip?: HTMLElement) {
+  shrinkAllSections(skip?: HTMLElement) {
     this.main.querySelectorAll("section").forEach((s) => {
       if (s.className != "shrink" && s != skip) {
         s.className = "shrink";
-        s.removeEventListener("scroll", this.sectionScrollChecker);
         let vid = s.querySelector("video");
         if (vid) vid.pause();
       }
     });
-    this.fitAll(true);
+
+    this.fitAllSections(true);
   }
 
-  closeAll() {
-    this.shrinkAll();
-
+  closeAllSections() {
+    this.shrinkAllSections();
     this.main.classList.remove("portfolio-opened");
     this.currentSection = null;
     this.closeButton.style.display = "";
@@ -439,6 +421,4 @@ export default class About extends AppEnvironment {
 
     emailButton.addEventListener("click", emailButtonOverride);
   }
-
-  sectionScrollChecker(ev) {}
 }
