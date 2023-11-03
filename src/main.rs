@@ -76,6 +76,7 @@ fn petrichor_serve() -> Router {
     let templates = ServeDir::new("petrichor-templates");
     Router::new()
         .nest_service("/templates", templates)
+        .nest_service("/health", get(|| async { "ok" }))
         .fallback_service(serve_dir)
 }
 
@@ -94,6 +95,7 @@ fn makeavoy_serve() -> Router {
         .nest_service("/assets", assets)
         .nest_service("/blog", blog)
         .nest_service("/archive", archive)
+        .nest_service("/health", get(|| async { "ok" }))
         .fallback_service(serve_dir)
 }
 
