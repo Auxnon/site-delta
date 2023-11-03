@@ -75,8 +75,8 @@ fn petrichor_serve() -> Router {
         ServeDir::new("petrichor-dist").not_found_service(ServeFile::new("404/index.html"));
     let templates = ServeDir::new("petrichor-templates");
     Router::new()
+        .route("/health", get(|| async { "ok" }))
         .nest_service("/templates", templates)
-        .nest_service("/health", get(|| async { "ok" }))
         .fallback_service(serve_dir)
 }
 
@@ -92,10 +92,10 @@ fn makeavoy_serve() -> Router {
     Router::new()
         // .route("/blog", post(blog_handler()))
         .route("/foo", get(|| async { "Hi from /foo" }))
+        .route("/health", get(|| async { "ok" }))
         .nest_service("/assets", assets)
         .nest_service("/blog", blog)
         .nest_service("/archive", archive)
-        .nest_service("/health", get(|| async { "ok" }))
         .fallback_service(serve_dir)
 }
 
