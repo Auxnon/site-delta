@@ -19,7 +19,7 @@ async fn main() {
         if lines.len() == 0 {
             default_address
         } else {
-            if lines.len() == 3 {
+            if lines.len() >= 3 {
                 pems = Some((lines[1].to_string(), lines[2].to_string()));
             }
             let b: Vec<u8> = lines[0]
