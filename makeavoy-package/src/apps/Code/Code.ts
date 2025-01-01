@@ -3,7 +3,7 @@
 
 import AppEnvironment from "../../types/AppEnvironment";
 import "./index.scss";
-import init, { run } from "silt_lua";
+import init, { run } from "silt-lua";
 
 const EXAMPLE = `-- Standard Lua applies, for the most part. See https://github.com/Auxnon/silt-lua for updates.
 -- For best performance use local scope. Stack based VM written in rust.
