@@ -163,6 +163,8 @@ export const rendererPromise = import(
 
   if (window.location.hash.length) {
     let st = window.location.hash.substring(1);
+    /// a little trick because I misused this location a lot
+    if(st==="portfolio") st="about"
     let id = APP_IDS[st];
     if (id != undefined) systemInstance.openApp(id);
   }
