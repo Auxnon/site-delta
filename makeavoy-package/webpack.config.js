@@ -131,7 +131,7 @@ module.exports = (env, argv) => {
             test: /apps\/[\\/]/,
             name(module) {
               const packageName = module.context.match(
-                /[\\/]App[\\/](.*?)([\\/]|$)/
+                /[\\/]App[\\/](.*?)([\\/]|$)/,
               )[1];
               return packageName;
             },
@@ -160,6 +160,11 @@ module.exports = (env, argv) => {
         },
       },
     },
+    ignoreWarnings: [
+      {
+        module: /sass/,
+      },
+    ],
     // externals: {
     //   silt_lua: require("silt_lua"),
     // },
