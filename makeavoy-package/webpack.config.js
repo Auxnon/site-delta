@@ -153,7 +153,7 @@ module.exports = (env, argv) => {
       port: 9000,
       proxy: {
         "/assets": {
-          target: "http://192.168.1.45:9001",
+          target: "http://0.0.0.0:9001",
           secure: false,
           changeOrigin: true,
           pathRewrite: { "^/assets": "" },
