@@ -16,6 +16,7 @@ export class System {
   targetMove?: AppShell | Container = undefined;
   resizeDebouncer?: number;
   resizing: boolean = false;
+  postResizeTimer: number = 0;
   appPoints: { x: number; y: number; app?: AppShell }[] = [];
   containers: Container[] = [];
   containersHash: { [key: number]: Container } = {};
@@ -55,11 +56,13 @@ export class System {
       this.closeApp();
     });
     window.addEventListener("recalculate", () => this.calculatePlacements());
+    // @ts-ignore
+    window.resize = () => this.resize();
     setTimeout(() => {
       this.resize(true);
       this.calculatePlacements(true);
       NavLine.init({ x: window.document.body.offsetWidth / 2, y: -200 });
-    }, 1000);
+    }, 2000);
   }
 
   pointerMove(ev: PointerEvent) {
@@ -207,7 +210,7 @@ export class System {
     } else {
       this.resizeDebouncer = window.setTimeout(
         () => this.resizedProcess(),
-        400
+        400,
       );
     }
   }
@@ -215,7 +218,7 @@ export class System {
   private resizedProcess() {
     this.resizing = false;
     this.mobilePortrait = window.matchMedia(
-      "(min-width: 600px) and (orientation: landscape)"
+      "(min-width: 600px) and (orientation: landscape)",
     ).matches;
 
     NavLine.resize(document.body.offsetWidth, document.body.offsetHeight);
@@ -223,6 +226,15 @@ export class System {
 
     this.containers.forEach((c) => c.resize());
     this.getBar().barAdjust(this.mainTitle);
+
+    clearTimeout(this.postResizeTimer);
+    this.postResizeTimer = window.setTimeout(() => this.postResize(), 300);
+
+    //UI.systemMessage('inner ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
+  }
+
+  /// For after containers are done resizing so we can get an accurate measurement
+  private postResize() {
     this.calculatePlacements();
     APPS.forEach((app) => {
       if (app && app.active) {
@@ -231,7 +243,6 @@ export class System {
     });
 
     Main.rendererPromise.then((r) => r.resize());
-    //UI.systemMessage('inner ' + window.innerWidth + '; screen ' + window.screen.width, 'success')
   }
 
   private startResizeProcess() {
@@ -245,7 +256,7 @@ export class System {
   animate() {
     Signature.animate(
       this.mousePos,
-      !(!this.currentApp || this.currentApp.isPartial())
+      !(!this.currentApp || this.currentApp.isPartial()),
     );
     NavLine.animate(this.getBar(), this.mousePos);
     this.cursor.animate();
@@ -498,7 +509,7 @@ export class System {
       }
       if (this.openApp(numeric_id)) {
         let hashString = Object.keys(APP_IDS).find(
-          (key) => APP_IDS[key] == numeric_id
+          (key) => APP_IDS[key] == numeric_id,
         );
         if (hashString) window.location.hash = `#${hashString}`;
       }

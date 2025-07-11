@@ -39,7 +39,7 @@ function init(mainDom, zIndex) {
     		if(ev.keyCode==32){
     			let v=Math.random();
     			let type=v>0.2?v>0.4?v>0.6?'warn':'error':'person':'time';
-    			
+
     			systemMessage(_spam('this is a test '),type)
     		}else if(ev.keyCode==90){
     			DEVVAR=systemMessage('No network connection oh darrrrrrn \n We\'ll keep tryna connect in the background ;)','net',true)
@@ -53,7 +53,7 @@ function systemMessage(
   m: string,
   type?: { type?: string; color?: string } | string,
   persistent?: boolean,
-  timeout: number = 3500
+  timeout: number = 3500,
 ) {
   let dom = document.createElement("div");
   dom.className = "uiSysTop";
