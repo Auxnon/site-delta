@@ -1,8 +1,14 @@
 import AppShell, { AppLocation } from "./AppShell";
+import { systemInstance } from "../Main";
 import "../style/container.scss";
+import * as NavLine from "../NavLine";
 import { Position } from "./Position";
 
 export abstract class Container {
+  /** Position of bar on the screen */
+  barPos: number = 1;
+  /** Whether bar is able to move and animate, different from whether container moves */
+  barMove: boolean = false;
   element = document.createElement("div");
   handle = document.createElement("div");
   size: DOMRect;
@@ -13,7 +19,10 @@ export abstract class Container {
   staticPos: Position = { x: 0, y: 0 };
   /** Calculated offset between staticPos and pos */
   staticOffset: Position = { x: 0, y: 0 };
-  constructor(protected id: number, target: HTMLElement) {
+  constructor(
+    protected id: number,
+    target: HTMLElement,
+  ) {
     this.element.id = `container-${id}`;
     this.element.classList.add("container");
     this.handle.classList.add("container-handle");
@@ -21,7 +30,7 @@ export abstract class Container {
     this.element.appendChild(this.handle);
     this.handle.addEventListener("pointerdown", (ev) => {
       ev.stopPropagation();
-      ev.preventDefault();
+      //
       this.handleDrag(ev);
       this.select();
     });
@@ -44,13 +53,26 @@ export abstract class Container {
     this.resize();
   }
 
-  abstract handleDrag(ev: PointerEvent): void;
+  handleDrag(ev: PointerEvent) {
+    this.barMove = true; //{x:ev.clientX-xx,y:ev.clientY-yy};
+
+    systemInstance.containerDrag(this.id, this, ev);
+    this.hideHandle();
+    NavLine.reactivate(this);
+  }
 
   getSize() {
     return this.size;
   }
-  getHandleSize() {
+  getHandleSize(): DOMRect {
     return this.handle.getBoundingClientRect();
+  }
+
+  showHandle(){
+      this.handle.hidden=false;
+  }
+  hideHandle(){
+      this.handle.hidden=true;
   }
 
   inBounds(x: number, y: number) {
@@ -96,6 +118,7 @@ export abstract class Container {
   resize() {
     this.size = this.element.getBoundingClientRect();
     this.drawActionLine();
+
   }
 
   center() {
@@ -128,6 +151,6 @@ export abstract class Container {
   abstract applyApps(
     apps: AppShell[] | undefined,
     hovering?: boolean,
-    targetApp?: AppShell
+    targetApp?: AppShell,
   ): void;
 }

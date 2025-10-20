@@ -4,8 +4,9 @@ import * as Render from "../Render";
 import * as Main from "../Main";
 import * as Helper from "../Helper";
 import AppEnvironment from "../types/AppEnvironment";
+// import { OrbitControls } from "three/examples/jsm/Addons.js";
 
-let shapes;
+let shapes: THREE.Mesh[];
 let groupMove;
 let groupPivot;
 const TAU = Math.PI * 2;
@@ -116,7 +117,7 @@ export default class Data extends AppEnvironment {
     // return this.scene;
   }
 
-  animate(delta) {
+  animate(delta: number) {
     shapes.forEach((c) => {
       c.rotation.x = Math.PI / 2;
       c.rotation.y += delta * 2;
@@ -133,8 +134,6 @@ export default class Data extends AppEnvironment {
 
     groupPivot.rotation.z = (pos.x / 2.0 - 0.25) * TAU;
   }
-
-  deinit() {}
 
   barGraph(data, scene, normalize, size) {
     /* let cubeO=new THREE.Mesh(cubeGeometry,cubeMaterial);

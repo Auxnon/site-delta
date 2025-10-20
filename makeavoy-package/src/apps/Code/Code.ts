@@ -3,11 +3,14 @@
 
 import AppEnvironment from "../../types/AppEnvironment";
 import "./index.scss";
-import init, { run } from "silt-lua";
+import init, { lsp, run } from "silt-lua";
 
-const EXAMPLE = `-- Standard Lua applies, for the most part. See https://github.com/Auxnon/silt-lua for updates.
--- For best performance use local scope. Stack based VM written in rust.
--- Many compile time errors are not caught yet. Standard library and meta functions not yet ready.
+const EXAMPLE1 = `-- Standard Lua applies, for the most part.
+-- See https://github.com/Auxnon/silt-lua for updates.
+-- For best performance use local scope.
+-- Stack based VM written in rust.
+-- Many compile time errors are not caught yet.
+-- Standard library and meta functions not yet ready.
 do
     local a = 1
     local b = 2
@@ -28,22 +31,32 @@ do
     print("You can also return values to the console.")
     return "Completed!"
 end`;
+const EXAMPLE = `do local a=1 local b=2 print(a+b) end`;
 
 export default class Code extends AppEnvironment {
   panel: HTMLElement;
   area: HTMLTextAreaElement;
+  pretty: HTMLParagraphElement;
   back: HTMLElement;
   output: HTMLElement;
   lines: number = 0;
   domLines: number = 0;
   runner?: (s: string) => string;
+  lspFunction?: (
+    s: string,
+    format?: boolean,
+  ) => { indented: string; legend: string[]; map: number[][] };
   throttle;
-  constructor(private dom: HTMLElement, id: number) {
+  constructor(
+    private dom: HTMLElement,
+    id: number,
+  ) {
     super(dom, id);
     this.resolver();
     init().then(() => {
       // window.go = (s) => run(s);
       this.runner = (s) => run(s);
+      this.lspFunction = (s, format) => lsp(s, format);
       // @ts-ignore
       window.jprintln = (s) => this.println(s);
       // let a = run("1+2");
@@ -70,6 +83,7 @@ export default class Code extends AppEnvironment {
   }
 
   refreshCode() {
+    this.formatter();
     const fontSize = 32; //parseFloat(getComputedStyle(this.area).fontSize) || 10;
     const slices = this.area.value.split("\n");
     this.lines = slices.length;
@@ -98,7 +112,14 @@ export default class Code extends AppEnvironment {
     seg.classList.add("code-segment");
     p.appendChild(seg);
 
+    const pretty = document.createElement("p");
+    pretty.classList.add("code-pretty");
+    pretty.innerText = EXAMPLE;
+    seg.appendChild(pretty);
+    this.pretty = pretty;
+
     const a = document.createElement("textarea");
+    a.spellcheck = false;
     a.classList.add("code-area");
     a.value = EXAMPLE;
     this.area = a;
@@ -106,6 +127,12 @@ export default class Code extends AppEnvironment {
       this.keycheck(ev);
     });
     seg.appendChild(a);
+
+    // document.addEventListener("keyup", (ev: KeyboardEvent) => {
+    //   if (ev.code === "K" && ev.ctrlKey) {
+    //     ev.preventDefault();
+    //   }
+    // });
 
     const b = document.createElement("div");
     b.classList.add("code-back");
@@ -116,7 +143,7 @@ export default class Code extends AppEnvironment {
     button.classList.add("code-run");
     button.innerText = "Run";
     button.addEventListener("click", () => {
-      this.run();
+      // this.lsp();
     });
     p.appendChild(button);
 
@@ -159,6 +186,9 @@ export default class Code extends AppEnvironment {
           this.refreshCode();
         });
       }
+    } else if (ev.key === "k" && ev.ctrlKey) {
+      ev.preventDefault();
+      this.formatter(true);
     } else if (ev.code === "Tab") {
       ev.preventDefault();
       const start = this.area.selectionStart;
@@ -177,7 +207,7 @@ export default class Code extends AppEnvironment {
 
   run() {
     const code = this.area.value;
-    // this.output.innerText = "";
+    this.output.innerText = "";
     if (this.runner) {
       const s = `> ${this.runner(code)}\n`;
       this.output.innerText += s;
@@ -187,6 +217,52 @@ export default class Code extends AppEnvironment {
     if (this.output.parentElement)
       this.output.parentElement.scrollTop =
         this.output.parentElement.scrollHeight;
+  }
+
+  formatter(format?: boolean) {
+    const code = this.area.value;
+    if (this.lspFunction) {
+      let { indented, map } = this.lspFunction(code, format);
+      let out = indented;
+      let offset = 0;
+      map.forEach((m) => {
+        const n = out;
+        out = "";
+        const st = m[0] + offset;
+        out += n.substring(0, st);
+        const end = st + m[1];
+        const t = m[2];
+        const word = n.substring(st, end);
+        console.log("the word", word, offset);
+        out += `<span class="word-${t}">${word}</span>`;
+        offset += 28;
+        out += n.substring(end);
+      });
+      const savedPosition = this.area.selectionEnd;
+      this.area.value = indented;
+      this.area.selectionEnd = savedPosition;
+      const lines = out.split("\n");
+      console.log(lines.length);
+      // this.pretty.innerHTML = out;
+      this.pretty.innerHTML = "";
+      lines.forEach((line) => {
+        let d;
+        if (line) {
+          d = document.createElement("pre");
+          d.innerHTML = line;
+        } else {
+          d = document.createElement("br");
+        }
+
+        // const d=document.createElement('div');
+        // d.innerHTML=line.replaceAll('\t', '&emsp;')
+        // d.innerHTML=line.replaceAll('function', '<b>function</b>');
+        this.pretty.appendChild(d);
+      });
+
+      // console.log(indented);
+      // console.log(map)
+    }
   }
 
   println(s: string) {

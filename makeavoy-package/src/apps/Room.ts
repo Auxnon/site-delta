@@ -26,8 +26,8 @@ export default class Room extends AppEnvironment {
 
   constructor(dom: HTMLElement, id: number) {
     super(dom, id);
-    (this.zMatrix = new THREE.Quaternion()),
-      (this.xMatrix = new THREE.Quaternion());
+    ((this.zMatrix = new THREE.Quaternion()),
+      (this.xMatrix = new THREE.Quaternion()));
     this.xMatrix.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
     let scene = new THREE.Scene();
     this.group = new THREE.Group();
@@ -51,7 +51,7 @@ export default class Room extends AppEnvironment {
 
     let seat = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshPhongMaterial({ color: 0x78725b })
+      new THREE.MeshPhongMaterial({ color: 0x78725b }),
     );
     seat.position.set(0, 0, -2);
     seat.castShadow = true;
@@ -145,7 +145,7 @@ export default class Room extends AppEnvironment {
     this.scene = scene;
   }
 
-  animate(delta) {
+  animate(delta: number) {
     this.group.rotation.z += delta / 1.0;
     if (this.group.rotation.z > Math.PI) this.group.rotation.z = -Math.PI;
 
@@ -155,7 +155,7 @@ export default class Room extends AppEnvironment {
 
     this.zMatrix.setFromAxisAngle(
       new THREE.Vector3(0, 0, 1),
-      -this.group.rotation.z
+      -this.group.rotation.z,
     );
     this.zMatrix.multiply(this.xMatrix);
     //console.log(zMatrix)
@@ -173,9 +173,12 @@ export default class Room extends AppEnvironment {
 
     let offset = 0;
 
-    if (z < 0.125) offset = 0.8; // 0
-    else if (z < 0.375) offset = 0.6; //.25
-    else if (z < 0.625) offset = 0.4; //.5
+    if (z < 0.125)
+      offset = 0.8; // 0
+    else if (z < 0.375)
+      offset = 0.6; //.25
+    else if (z < 0.625)
+      offset = 0.4; //.5
     else if (z < 0.875) offset = 0.2;
 
     let texture = this.plane.material.map;
@@ -212,7 +215,7 @@ export default class Room extends AppEnvironment {
       canvas.height = height;
       let context = canvas.getContext("2d");
       if (context) {
-        (canvas.style.position = "absolute"), (canvas.style.left = "0px");
+        ((canvas.style.position = "absolute"), (canvas.style.left = "0px"));
         canvas.style.top = "0px";
         canvas.style.transform = "scale(10,10)";
         context.drawImage(image, 0, 0, width, height);
@@ -234,7 +237,7 @@ export default class Room extends AppEnvironment {
   }
 
   topper(ele: HTMLElement) {
-    (ele.style.position = "absolute"), (ele.style.left = "0px");
+    ((ele.style.position = "absolute"), (ele.style.left = "0px"));
     ele.style.top = "0px";
   }
 

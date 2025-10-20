@@ -1,6 +1,4 @@
-// import * as THREE from "./lib/three.module.js";
 import * as THREE from "three";
-import * as Render from "../Render.js";
 
 //pass in name, and a pointer to a complete function which dictates everything has loaded,
 //we keep track inside the mini class by counting  resources and incrementing till count is complete then, complte()
@@ -20,24 +18,27 @@ export default abstract class AppEnvironment {
       resolve(a);
     };
   });
-  constructor(public element: HTMLElement, public id: number) {}
+
+  constructor(
+    public element: HTMLElement,
+    public id: number,
+  ) {}
 
   onCompletion(): Promise<unknown> {
     return this.completed;
   }
   //runs every frame
-  animate(delta) {}
+  animate?(delta: number): void;
 
   //unused for now, would deload everything for memory reasons
-  deinit() {}
-
+  deinit?(): void;
   //called when toggled to this app, on a page load with app ideally it would run init and immediately run open after
   //also passes in the canvas in case the app wants to do something wacky with it like resize it or place it somewhere else
   //return true if changes were made and it wont follow the default
-  open(canvas?: HTMLElement) {}
+  open?(canvas?: HTMLElement): void;
   //called when app is closed out for another one
   close() {}
-  adjust(amount: number) {}
+  adjust?(amount: number): void;
   resized() {}
   startResize() {}
 }

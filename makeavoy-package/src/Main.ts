@@ -35,7 +35,7 @@ APPS[2] = new AppShell(
   main_container,
   2,
   "Punk",
-  require("./assets/skull.png"),
+  require("./assets/skull.svg"),
   import(/* webpackChunkName: "PunkApp" */ "./apps/Punk")
 );
 
@@ -135,6 +135,14 @@ APPS[12] = new AppShell(
   import(/* webpackChunkName: "CodeApp" */ "./apps/Code/Code")
 );
 
+// APPS[13] = new AppShell(
+//   main_container,
+//   13,
+//   "Graph",
+//   require("./assets/access.png"),
+//   import(/* webpackChunkName: "GraphApp" */ "../../../Sandbox/billboarded-3d-graph/app")
+// );
+
 export const APP_IDS = {};
 
 APPS.forEach((app) => {
@@ -156,6 +164,9 @@ export const rendererPromise = import(
   // }
   return renderer;
 });
+
+//@ts-ignore dirty hack!!
+window.rendererPromise=rendererPromise;
 
 (function init() {
   systemInstance.init();

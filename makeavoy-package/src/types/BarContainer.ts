@@ -1,13 +1,12 @@
 import AppShell from "./AppShell";
 import { Container } from "./Container";
-import * as NavLine from "../NavLine";
+import { systemInstance } from "../Main";
 
 export class BarContainer extends Container {
-  /** Position of bar on the screen */
-  barPos: number = 1;
   sideways: boolean = false;
-  barMove: boolean = false;
   appPoints: { x: number; y: number }[];
+  appDrawer?: AppShell;
+  private maxAppsBeforeDrawer: number = 8;
 
   constructor(id: number, target: HTMLElement) {
     super(id, target);
@@ -24,17 +23,52 @@ export class BarContainer extends Container {
     this.element.style.top = document.body.offsetHeight - 64 + "px";
   }
 
-  handleDrag(ev: PointerEvent) {
-    this.barMove = true; //{x:ev.clientX-xx,y:ev.clientY-yy};
-    NavLine.reactivate();
-  }
-
   applyApps(apps: AppShell[], hovering?: boolean, targetApp?: AppShell) {
-    const appBarCount = apps.length;
     const sideWays = this.barPos == 0 || this.barPos == 2;
     this.sideways = sideWays;
 
+    // Check if we need an app drawer
+    const needsDrawer = this.checkCapacity(apps);
+    let visibleApps = apps;
+    let hiddenApps: AppShell[] = [];
+
+    if (needsDrawer) {
+      // Split apps into visible and hidden
+      visibleApps = apps.slice(0, this.maxAppsBeforeDrawer - 1);
+      hiddenApps = apps.slice(this.maxAppsBeforeDrawer - 1);
+
+      // Create or update app drawer
+      if (!this.appDrawer) {
+        this.appDrawer = this.createAppDrawer();
+      }
+
+      // Add drawer to visible apps
+      visibleApps.push(this.appDrawer);
+
+      // Hide overflow apps
+      hiddenApps.forEach((app) => {
+        app.hide();
+        app.element.style.pointerEvents = "none";
+      });
+
+      // Update drawer with hidden apps
+      this.updateAppDrawer(hiddenApps);
+    } else {
+      // Remove app drawer if it exists
+      if (this.appDrawer) {
+        this.removeAppDrawer();
+      }
+
+      // Show all apps
+      apps.forEach((app) => {
+        app.show();
+        app.element.style.pointerEvents = "auto";
+      });
+    }
+
+    const appBarCount = visibleApps.length;
     const dim = (appBarCount > 0 ? appBarCount : 1) * 72;
+
     if (sideWays) {
       this.element.style.height = dim + "px";
       if (dim !== this.size.height) this.resize();
@@ -52,17 +86,18 @@ export class BarContainer extends Container {
     if (sideWays) ratio = height / appBarCount;
     else ratio = width / appBarCount;
 
-    // if (!notate) {
+    // Sort visible apps
     if (sideWays)
-      apps.sort(function (a, b) {
+      visibleApps.sort(function (a, b) {
         return parseInt(a.element.style.top) - parseInt(b.element.style.top);
       });
     else
-      apps.sort(function (a, b) {
+      visibleApps.sort(function (a, b) {
         return parseInt(a.element.style.left) - parseInt(b.element.style.left);
       });
-    // }
-    apps.forEach((app, index) => {
+
+    // Position visible apps
+    visibleApps.forEach((app, index) => {
       let id = app.id;
       if (sideWays)
         this.appPoints[id] = {
@@ -77,11 +112,16 @@ export class BarContainer extends Container {
 
       if (targetApp && targetApp == app)
         app.setMagnet(this.appPoints[id].x, this.appPoints[id].y);
-      else app.move(this.appPoints[id].x, this.appPoints[id].y); //appsInRow[i]
+      else app.move(this.appPoints[id].x, this.appPoints[id].y);
     });
   }
 
-  barAdjust(mainTitle: HTMLElement) {
+  resize() {
+    this.barAdjust();
+    super.resize();
+  }
+
+  barAdjust() {
     if (this.barPos == 2) {
       //right
       this.element.style.left = document.body.offsetWidth - 64 + "px";
@@ -89,13 +129,11 @@ export class BarContainer extends Container {
       // this.barHandle.style.transform = "translate(-200%,-50%)";
       // this.barHandle.style.width = "32px";
       // this.barHandle.style.height = "80%";
-      mainTitle.style.top = "8px";
     } else if (this.barPos == 3) {
       //top
       // this.barHandle.style.transform = "translate(-50%,100%)";
       this.element.style.left = "50%";
       this.element.style.top = "64px"; //-196+window.innerWidth/2
-      mainTitle.style.top = "calc(100% - 120px)";
       // this.barHandle.style.height = "32px";
       // this.barHandle.style.width = "80%";
     } else if (this.barPos == 1) {
@@ -103,7 +141,6 @@ export class BarContainer extends Container {
       // this.barHandle.style.transform = "translate(-50%,-200%)";
       this.element.style.left = "50%";
       this.element.style.top = document.body.offsetHeight - 64 + "px"; //-196+window.innerWidth/2
-      mainTitle.style.top = "8px";
       // this.barHandle.style.height = "32px";
       // this.barHandle.style.width = "80%";
     } else {
@@ -113,9 +150,7 @@ export class BarContainer extends Container {
       this.element.style.top = "50%";
       // this.barHandle.style.width = "32px";
       // this.barHandle.style.height = "80%";
-      mainTitle.style.top = "8px";
     }
-    this.resize();
   }
 
   barMoveHandler(ev: PointerEvent) {
@@ -179,4 +214,38 @@ export class BarContainer extends Container {
   drawActionLine(): void {}
   addActionLine(): void {}
   select(): void {}
+
+  private checkCapacity(apps: AppShell[]): boolean {
+    // For bar container, check if apps would overflow the screen
+    const sideWays = this.barPos == 0 || this.barPos == 2;
+    const appSize = 72; // Size of each app
+    const requiredSpace = apps.length * appSize;
+
+    if (sideWays) {
+      return requiredSpace > document.body.offsetHeight - 128; // Leave some margin
+    } else {
+      return requiredSpace > document.body.offsetWidth - 128; // Leave some margin
+    }
+  }
+
+  private createAppDrawer(): AppShell {
+    const drawerId = 9999; // Special ID for app drawer
+    const drawer = systemInstance.createAppDrawer(drawerId, this.id);
+    drawer.element.classList.add("app-drawer-shell");
+    return drawer;
+  }
+
+  private updateAppDrawer(hiddenApps: AppShell[]) {
+    if (this.appDrawer) {
+      // This will be handled by the AppDrawer instance
+      systemInstance.updateAppDrawer(this.appDrawer, hiddenApps, this.id);
+    }
+  }
+
+  private removeAppDrawer() {
+    if (this.appDrawer) {
+      systemInstance.removeAppDrawer(this.appDrawer);
+      this.appDrawer = undefined;
+    }
+  }
 }

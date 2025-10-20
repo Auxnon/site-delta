@@ -1,4 +1,6 @@
 import { BarContainer } from "./types/BarContainer";
+import {systemInstance} from "./Main";
+import { Container } from "./types/Container";
 import { Position } from "./types/Position";
 
 enum NavLineState {
@@ -38,7 +40,7 @@ export function resetMovement() {
 }
 
 export function release() {
-  navLineState = NavLineState.Free;
+  if (navLineState === NavLineState.Grabbed) navLineState = NavLineState.Free;
 }
 
 export function grab() {
@@ -51,32 +53,36 @@ export function getState() {
   return navLineState;
 }
 
-export function reactivate() {
+export function reactivate(target: Container) {
   navLineState = NavLineState.Grabbed;
   navLineIteration = 1;
-  if (points.length < 10) {
-    //rebuild are point array
-    let startPoint = points[0];
-    let endPoint = points[1];
-    let dx = endPoint.x - startPoint.x;
-    for (let i = 0; i < 7; i++) {
-      const diff = Math.random() * (i % 2 == 0 ? 100 : -100);
-      let x = startPoint.x + (dx * i) / 7;
-      let y = startPoint.y + diff;
-      points.push({ x: x, y: y });
-    }
-    // drawBarLine(endPoint, endPoint);
-    // let array = Array(7).fill(startPoint);
-    // points = array.concat(points);
+  // if (points.length < 10) {
+  //rebuild are point array
+  const p = computeBar(target);
+
+  const startPoint = p[0];
+  const endPoint = p[1];
+  points[0] = startPoint;
+  points[1] = endPoint;
+  let dx = endPoint.x - startPoint.x;
+  for (let i = 0; i < 7; i++) {
+    const diff = Math.random() * (i % 2 == 0 ? 20 : -20);
+    let x = startPoint.x + (dx * i) / 7;
+    let y = startPoint.y + diff;
+    points.push({ x: x, y: y });
   }
+  // drawBarLine(endPoint, endPoint);
+  // let array = Array(7).fill(startPoint);
+  // points = arra.getHandleSize(), this.getBar().sidewaysy.concat(points);
+  // }
 }
 
-export function animate(bar: BarContainer, mouse: Position) {
+export function animate(bar: Container, mouse: Position) {
   if (
     navLineState !== NavLineState.Inactive &&
     navLineState !== NavLineState.Uninitialized
   ) {
-    console.log("animate", navLineState, navLineIteration);
+    // console.log("animate", navLineState, navLineIteration);
     // if (navLineState === NavLineState.Grabbed) {
     if (navLineState === NavLineState.Free) {
       const barPos = bar.barPos;
@@ -132,8 +138,8 @@ export function animate(bar: BarContainer, mouse: Position) {
       } else {
         //wiggle the line
         nextVector = {
-          x: localMouse.x - ((tick ? 1 : -1) * 20 * diff.y) / dr,
-          y: localMouse.y + ((tick ? 1 : -1) * 20 * diff.x) / dr,
+          x: localMouse.x - ((tick ? 1 : -1) * 10 * diff.y) / dr,
+          y: localMouse.y + ((tick ? 1 : -1) * 10 * diff.x) / dr,
         };
       }
 
@@ -146,10 +152,9 @@ export function animate(bar: BarContainer, mouse: Position) {
     if (navLineState === NavLineState.Free && navLineIteration % 5 == 1) {
       let target = points.shift();
       if (points.length <= 3) {
-        navLineState = NavLineState.Inactive;
-        const sideways = bar.barPos == 0 || bar.barPos == 2;
-        calculate(bar.getHandleSize(), sideways);
-      } else {
+        deactivate();
+        calculate(bar);
+      } else if (target !== undefined) {
         drawBarLine(target, localMouse);
       }
     }
@@ -157,25 +162,43 @@ export function animate(bar: BarContainer, mouse: Position) {
   }
 }
 
+function deactivate() {
+  navLineState = NavLineState.Inactive;
+  systemInstance.clearLastContainerTarget();
+}
+
 export function resize(w: number, h: number) {
   svg.setAttribute("width", document.body.offsetWidth + "px");
   svg.setAttribute("height", document.body.offsetHeight + "px");
 }
 
-/** When not animating redraw the navline over the bar from a resize or other redraw event */
-export function calculate(handle: DOMRect, sideways: boolean) {
-  if (navLineState === NavLineState.Inactive) {
-    if (sideways) {
-      let xx = handle.left + handle.width / 2;
-      drawSimpleBarLine({ x: xx, y: handle.top }, { x: xx, y: handle.bottom });
-    } else {
-      let yy = handle.top + handle.height / 2;
-      drawSimpleBarLine({ x: handle.left, y: yy }, { x: handle.right, y: yy });
-    }
+function computeBar(c: Container) {
+  const handle = c.getHandleSize();
+  const sideways = c.barPos == 0 || c.barPos == 2;
+  if (sideways) {
+    let xx = handle.left + handle.width / 2;
+    return [
+      { x: xx, y: handle.top },
+      { x: xx, y: handle.bottom },
+    ];
+  } else {
+    let yy = handle.top + handle.height / 2;
+    return [
+      { x: handle.left, y: yy },
+      { x: handle.right, y: yy },
+    ];
   }
 }
 
-function drawBarLine(nextVector, mouseObj: Position) {
+/** When not animating redraw the navline over the bar from a resize or other redraw event */
+export function calculate(c: Container) {
+  if (navLineState === NavLineState.Inactive) {
+    const p = computeBar(c);
+    drawSimpleBarLine(p[0], p[1]);
+  }
+}
+
+function drawBarLine(nextVector: Position, mouseObj: Position) {
   let st = "M" + mouseObj.x + " " + mouseObj.y;
   let last = { x: nextVector.x, y: nextVector.y };
   for (let i = 0; i < points.length; i++) {
@@ -192,7 +215,7 @@ function drawBarLine(nextVector, mouseObj: Position) {
   path.setAttribute("d", st);
 }
 
-function drawSimpleBarLine(one, two) {
+function drawSimpleBarLine(one: Position, two: Position) {
   points = [one, two];
   let st = "M" + one.x + " " + one.y + "L" + two.x + " " + two.y;
   path.setAttribute("d", st);

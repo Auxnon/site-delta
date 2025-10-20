@@ -5,6 +5,8 @@ import { Container } from "./Container";
 export class FolderContainer extends Container {
   appSortOrganized = true;
   windowed = true;
+  appDrawer?: AppShell;
+  private maxAppsBeforeDrawer: number = 16; // 4x4 grid before drawer needed
 
   constructor(id: number, target: HTMLElement) {
     super(id, target);
@@ -33,7 +35,7 @@ export class FolderContainer extends Container {
   applyApps(
     apps: AppShell[] | undefined,
     hovering?: boolean,
-    targetApp?: AppShell
+    targetApp?: AppShell,
   ) {
     if (!apps) return;
     if (this.windowed) {
@@ -47,38 +49,79 @@ export class FolderContainer extends Container {
     let rect = this.getSize();
     const cx = this.pos.x - rect.width / 2;
     const cy = this.pos.y - rect.height / 2;
-    let locations: AppLocation[] = [];
+
     if (this.appSortOrganized) {
       const padding = 72;
-      // const padding2 = padding / 2;
       const pw = rect.width - padding;
       const ph = rect.height - padding;
       const cols = Math.floor(pw / 72);
       const rows = Math.floor(ph / 72);
+      const maxApps = cols * rows;
+
+      // Check if we need an app drawer
+      const needsDrawer = apps.length > maxApps;
+      let visibleApps = apps;
+      let hiddenApps: AppShell[] = [];
+
+      if (needsDrawer) {
+        // Split apps into visible and hidden
+        visibleApps = apps.slice(0, maxApps - 1);
+        hiddenApps = apps.slice(maxApps - 1);
+
+        // Create or update app drawer
+        if (!this.appDrawer) {
+          this.appDrawer = this.createAppDrawer();
+        }
+
+        // Add drawer to visible apps
+        visibleApps.push(this.appDrawer);
+
+        // Hide overflow apps
+        hiddenApps.forEach((app) => {
+          app.hide();
+          app.element.style.pointerEvents = "none";
+        });
+
+        // Update drawer with hidden apps
+        this.updateAppDrawer(hiddenApps);
+      } else {
+        // Remove app drawer if it exists
+        if (this.appDrawer) {
+          this.removeAppDrawer();
+        }
+
+        // Show all apps
+        apps.forEach((app) => {
+          app.show();
+          app.element.style.pointerEvents = "auto";
+        });
+      }
+
       const colRemainder = (72 + (rect.width - cols * padding)) / 2;
       const rowRemainder = (72 + (rect.height - rows * padding)) / 2;
       const offsetX = cx + colRemainder;
       const offsetY = cy + rowRemainder;
       let reserved: AppShell[] = [];
+
       // sort by distance from 0,0
-      apps.sort((a, b) => {
+      visibleApps.sort((a, b) => {
         const aDist = Math.sqrt(Math.pow(a.pos.x, 2) + Math.pow(a.pos.y, 2));
         const bDist = Math.sqrt(Math.pow(b.pos.x, 2) + Math.pow(b.pos.y, 2));
         return aDist - bDist;
       });
 
-      apps.forEach((app, i) => {
+      visibleApps.forEach((app) => {
         if (app.isPartial()) {
           app.close();
         }
         const pos = {
           x: Math.min(
             Math.max(Math.round((app.pos.x - offsetX) / 72), 0),
-            cols - 1
+            cols - 1,
           ),
           y: Math.min(
             Math.max(Math.round((app.pos.y - offsetY) / 72), 0),
-            rows - 1
+            rows - 1,
           ),
         };
         let index = pos.x + pos.y * cols;
@@ -111,22 +154,6 @@ export class FolderContainer extends Container {
           }
         }
       });
-
-      // let rows = (apps.length * (56 + 28) + 28) / rect.width;
-      // rows = Math.ceil(rows);
-      // let perRow = apps.length / rows;
-      // console.log("rows", rows);
-      // let homeRatio = (rect.width - 112) / (apps.length - 1);
-      // apps.forEach((app, relativeIndex) => {
-      //   const i = app.id;
-      //   const l = {
-      //     id: i,
-      //     x: 56 + rect.left + relativeIndex * homeRatio,
-      //     y: rect.top + 56,
-      //   };
-      //   locations.push(l);
-      //   app.move(l.x, l.y);
-      // });
     } else {
       apps.forEach((app, i) => {
         app.incrementPosition(this.staticOffset);
@@ -151,10 +178,10 @@ export class FolderContainer extends Container {
   }
 
   handleDrag(ev: PointerEvent) {
+    super.handleDrag(ev);
     this.offset = { x: this.pos.x - ev.clientX, y: this.pos.y - ev.clientY };
     this.isMoving = false;
     this.element.classList.add("container--moving");
-    systemInstance.containerDrag(this.id, this, ev);
   }
 
   dragOver(target: AppShell): boolean {
@@ -168,5 +195,25 @@ export class FolderContainer extends Container {
 
   deselect(): void {
     this.element.classList.remove("container--moving");
+  }
+
+  private createAppDrawer(): AppShell {
+    const drawerId = 9998; // Special ID for app drawer
+    const drawer = systemInstance.createAppDrawer(drawerId, this.id);
+    drawer.element.classList.add("app-drawer-shell");
+    return drawer;
+  }
+
+  private updateAppDrawer(hiddenApps: AppShell[]) {
+    if (this.appDrawer) {
+      systemInstance.updateAppDrawer(this.appDrawer, hiddenApps, this.id);
+    }
+  }
+
+  private removeAppDrawer() {
+    if (this.appDrawer) {
+      systemInstance.removeAppDrawer(this.appDrawer);
+      this.appDrawer = undefined;
+    }
   }
 }

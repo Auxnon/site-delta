@@ -44,7 +44,7 @@ export default class AppShell {
     public id: number,
     public instanceClass: string,
     public asset: string,
-    moduleLoader: Promise<any> | (() => void)
+    moduleLoader: Promise<any> | (() => void),
   ) {
     this.element = document.createElement("app");
     this.element.id = "app" + id;
@@ -72,11 +72,11 @@ export default class AppShell {
         const module = await moduleLoader;
         // module
         const app: any = new module.default(this.element, this.id);
-        if (!(app instanceof AppEnvironment)) {
+        if (!app.onCompletion) {
           this.failed = true;
           return undefined;
         }
-        app.completed;
+        // app.completed;
         await app.onCompletion();
 
         return app;
@@ -162,7 +162,7 @@ export default class AppShell {
       this.preloader = undefined;
     }
     this.instancePromise?.then((instance) => {
-      if (instance instanceof AppEnvironment) {
+      if (instance !== undefined) {
         rendererPromise.then((r) => r.setApp(this, instance));
       }
     });
@@ -228,7 +228,7 @@ export default class AppShell {
     this.element.style.setProperty("--partial-width", `${target.size.width}px`);
     this.element.style.setProperty(
       "--partial-height",
-      `${target.size.height}px`
+      `${target.size.height}px`,
     );
   }
 
@@ -245,7 +245,7 @@ export default class AppShell {
     this.setZ();
 
     this.instancePromise?.then((instance) => {
-      if (instance instanceof AppEnvironment) {
+      if (instance !== undefined) {
         instance.close();
       }
     });
@@ -256,7 +256,7 @@ export default class AppShell {
 
   adjust(amount: number) {
     this.instancePromise?.then((instance) => {
-      if (instance instanceof AppEnvironment) {
+      if (instance !== undefined && instance.adjust) {
         instance.adjust(amount);
       }
     });
@@ -264,7 +264,7 @@ export default class AppShell {
 
   loadInstance(canvas?: HTMLElement) {
     this.instancePromise?.then((instance) => {
-      if (instance instanceof AppEnvironment) {
+      if (instance != undefined && instance.open) {
         instance.open(canvas);
         this.clearPend();
       }
@@ -307,7 +307,7 @@ export default class AppShell {
   startResize() {
     if (this.active)
       this.instancePromise?.then((instance) => {
-        if (instance instanceof AppEnvironment) {
+        if (instance !== undefined) {
           instance.startResize();
         }
       });
@@ -316,7 +316,7 @@ export default class AppShell {
   resized() {
     if (this.active)
       this.instancePromise?.then((instance) => {
-        if (instance instanceof AppEnvironment) {
+        if (instance !== undefined) {
           instance.resized();
         }
       });

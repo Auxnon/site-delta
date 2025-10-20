@@ -1,0 +1,108 @@
+.app-drawer {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 800px;
+  max-height: 600px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .app-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .app-drawer-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  .app-drawer-content {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .app-drawer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 15px;
+    padding: 10px;
+  }
+
+  .app-drawer-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background 0.2s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .app-drawer-icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    }
+
+    .app-drawer-name {
+      font-size: 12px;
+      text-align: center;
+      word-wrap: break-word;
+      max-width: 70px;
+    }
+  }
+}
+
+// Special styling for the drawer app shell itself
+.app-drawer-shell {
+  background: rgba(100, 100, 100, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::before {
+    content: "⋯";
+    font-size: 24px;
+    color: white;
+    font-weight: bold;
+  }
+}

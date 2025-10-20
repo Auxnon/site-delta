@@ -8,18 +8,34 @@
   // background-color: #7774;
   // image-rendering: pixelated;
   // background-image: url("../assets/dither1.png");
-  background: radial-gradient(
-      circle at center,
-      var(--panel-bg-color) 0.066rem,
-      transparent 0
-    ),
-    radial-gradient(
-      circle at center,
-      var(--panel-bg-color) 0.066rem,
-      transparent 0
-    );
-  background-size: 0.66rem 0.66rem;
-  background-position: 0 0, 0.33rem 0.33rem;
+
+  /* background: radial-gradient( */
+  /*     circle at center, */
+  /*     var(--panel-bg-color) 0.11rem, */
+  /*     transparent 0 */
+  /*   ), */
+  /*   radial-gradient( */
+  /*     circle at center, */
+  /*     var(--panel-bg-color) 0.11rem, */
+  /*     transparent 0 */
+  /*   ); */
+  /* background-size: 0.44rem 0.44rem; */
+  /* background-position: 0 0, 0.22rem 0.22rem; */
+
+background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAACFJREFUCJljYGBg+A/FDAwMDP+ZoAxGBjQGTAUDTAVcAQDKUAQESCK7dQAAAABJRU5ErkJggg==");
+            background-size: 4px 4px;
+            background-color: transparent;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+
+  /* background: */
+  /*   linear-gradient(135deg, blue, #FFF0), */
+  /*   url(https://grainy-gradients.vercel.app/noise.svg); */
+  /* filter: contrast(170%) brightness(100%); */
+
+
+
   box-sizing: border-box;
   border-radius: 16px;
   aspect-ratio: 1/1;
@@ -29,7 +45,11 @@
   height: 80vmin;
   left: 50%;
   top: 50%;
-  transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s;
+  transition:
+    left 0.2s,
+    top 0.2s,
+    width 0.2s,
+    height 0.2s;
   transform: translate(-50%, -50%);
   &.bar-container {
     position: absolute;

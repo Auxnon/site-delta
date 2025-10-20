@@ -9,11 +9,13 @@ import * as Signature from "./Signature";
 import { Cursor, Hover } from "./Cursor";
 import { initBackground } from "./Background";
 import { cursorMessage } from "./UI";
+import AppDrawer from "./apps/AppDrawer";
 
 export class System {
   currentApp?: AppShell;
   positionalData = { x: 0, y: 0 };
   targetMove?: AppShell | Container = undefined;
+  targetContainer?: Container = undefined
   resizeDebouncer?: number;
   resizing: boolean = false;
   postResizeTimer: number = 0;
@@ -23,6 +25,7 @@ export class System {
   containerIterator: number = 1;
   mousePos = { x: 0, y: 0 };
   cursor: Cursor = new Cursor();
+  appDrawers: Map<number, AppDrawer> = new Map();
 
   mainBody: HTMLElement;
   mainTitle: HTMLElement;
@@ -36,8 +39,8 @@ export class System {
     this.mousePos = { x: window.document.body.offsetWidth / 2, y: -200 };
   }
 
-  getBar(): BarContainer {
-    return this.containersHash[0] as BarContainer;
+  getGrabbedContainer(): Container {
+    return this.targetContainer || this.containersHash[0];
   }
 
   init() {
@@ -49,8 +52,8 @@ export class System {
     // }, 10000);
     window.addEventListener("resize", () => this.resize());
     window.addEventListener("orientationchange", () => this.resize);
-    window.addEventListener("pointermove", (ev) => this.pointerMove(ev));
-    window.addEventListener("pointerdown", (ev) => this.pointerMove(ev));
+    window.addEventListener("pointermove", (ev) => this.pointerDownOrMove(ev));
+    window.addEventListener("pointerdown", (ev) => this.pointerDownOrMove(ev));
     window.addEventListener("pointerup", (ev) => this.pointerRelease(ev));
     this.mainTitle.addEventListener("click", (ev) => {
       this.closeApp();
@@ -60,12 +63,12 @@ export class System {
     window.resize = () => this.resize();
     setTimeout(() => {
       this.resize(true);
-      this.calculatePlacements(true);
+      this.calculatePlacements();
       NavLine.init({ x: window.document.body.offsetWidth / 2, y: -200 });
     }, 2000);
   }
 
-  pointerMove(ev: PointerEvent) {
+  pointerDownOrMove(ev: PointerEvent) {
     this.cursor.hover(Hover.None);
     this.positionalData = {
       x: ev.clientX / document.body.offsetWidth,
@@ -74,7 +77,7 @@ export class System {
     this.mousePos = { x: ev.clientX, y: ev.clientY };
     this.cursor.move(ev.clientX, ev.clientY);
 
-    this.getBar().barMoveHandler(ev);
+    // this.getBar().barMoveHandler(ev);
     if (this.targetMove) {
       NavLine.move();
       this.targetMove.pos = {
@@ -140,13 +143,13 @@ export class System {
   pointerRelease(ev: PointerEvent) {
     this.cursor.hover(Hover.None);
     const quickMovement = NavLine.getMovement() < 10;
-    if (this.getBar().barMove) {
-      this.getBar().barMove = false;
-      NavLine.release();
+    if (this.getGrabbedContainer().barMove) {
+      this.getGrabbedContainer().barMove = false;
       if (quickMovement) {
         this.closeApp();
       }
     }
+    NavLine.release();
 
     if (this.targetMove instanceof AppShell) {
       this.targetMove.element.classList.remove("app--moving");
@@ -199,6 +202,10 @@ export class System {
     NavLine.resetMovement();
   }
 
+  public clearLastContainerTarget(){
+      this.targetContainer=undefined
+  }
+
   resize(force?: boolean) {
     if (!this.resizing) {
       this.resizing = true;
@@ -225,7 +232,8 @@ export class System {
     Signature.resize(document.body.offsetWidth, document.body.offsetHeight);
 
     this.containers.forEach((c) => c.resize());
-    this.getBar().barAdjust(this.mainTitle);
+    // TODO check if bars are at top, if yes check if bottom empty, move title to: mainTitle.style.top = "calc(100% - 120px)";
+    // mainTitle.style.top = "8px";
 
     clearTimeout(this.postResizeTimer);
     this.postResizeTimer = window.setTimeout(() => this.postResize(), 300);
@@ -258,7 +266,7 @@ export class System {
       this.mousePos,
       !(!this.currentApp || this.currentApp.isPartial()),
     );
-    NavLine.animate(this.getBar(), this.mousePos);
+    NavLine.animate(this.getGrabbedContainer(), this.mousePos);
     this.cursor.animate();
 
     requestAnimationFrame(() => this.animate());
@@ -280,6 +288,9 @@ export class System {
 
   containerDrag(id: number, container: Container, ev: PointerEvent) {
     this.targetMove = container;
+    // if 
+    // dfsdf
+    this.targetContainer=container;
     for (let i = 0; i < APPS.length; i++) {
       if (APPS[i] && APPS[i].getContainerId() == id) {
         APPS[i].hide();
@@ -416,7 +427,7 @@ export class System {
       if (apps) c.applyApps(apps, hovering, target);
     }
 
-    NavLine.calculate(this.getBar().getHandleSize(), this.getBar().sideways);
+    NavLine.calculate(this.getGrabbedContainer());
   }
 
   // adjustApps(amount: number) {
@@ -578,5 +589,35 @@ export class System {
 
     // this.mainTitle.classList.remove("shrink");
     document.body.classList.remove("full-app");
+  }
+
+  createAppDrawer(drawerId: number, containerId: number): AppShell {
+    const appShell = new AppShell(
+      this.mainBody,
+      drawerId,
+      "AppDrawer",
+      require("./assets/drawer.png"),
+      import(/* webpackChunkName: "AppDrawer" */ "./apps/AppDrawer"),
+    );
+
+    appShell.setContainerId(containerId);
+    return appShell;
+  }
+
+  updateAppDrawer(
+    drawerShell: AppShell,
+    hiddenApps: AppShell[],
+    containerId: number,
+  ) {
+    drawerShell.instancePromise?.then((instance) => {
+      if (instance instanceof AppDrawer) {
+        instance.setContainerApps(hiddenApps, containerId);
+      }
+    });
+  }
+
+  removeAppDrawer(drawerShell: AppShell) {
+    drawerShell.element.remove();
+    this.appDrawers.delete(drawerShell.id);
   }
 }

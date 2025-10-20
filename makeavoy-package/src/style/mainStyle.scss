@@ -1,3 +1,5 @@
+@import "./app-drawer.scss";
+
 ::-webkit-scrollbar-track {
   background-color: none;
   /*-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
@@ -30,6 +32,7 @@ body {
   width: 100vw;
   height: 100%;
   touch-action: none;
+  overflow: hidden;
 }
 
 body {

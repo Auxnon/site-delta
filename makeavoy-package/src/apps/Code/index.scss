@@ -1,3 +1,27 @@
+/* 8. Avoid text overflows */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* 9. Improve line wrapping */
+p {
+  text-wrap: pretty;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
 .app-code.app-max {
   background-color: rgb(54, 43, 94);
 }
@@ -7,10 +31,10 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 80%;
+  width: 512px;
   max-width: 816px;
   max-height: 1024px;
-  height: 80%;
+  height: 816px;
   background-color: #e3e2d7;
   border-radius: 16px 100px 16px 16px;
   box-shadow: 0px 10px 10px 0px rgba(0, 0, 0, 0.25);
@@ -79,17 +103,64 @@
     //   height: 10px;
     //   background: red;
     // }
-    .code-area {
+    .code-pretty {
       color: #5c594c;
-      position: relative;
+      position: absolute;
       border-left: 3px solid #7d7979;
       margin: 2rem;
+      font-family: Arial, Helvetica, sans-serif;
+      width: 100%;
+      height: auto;
+      line-height: 2rem;
+      padding: 4px;
+      padding-left: 2.5rem;
+      overflow: hidden;
+      * {
+        /* font-size: 14px; */
+        /* tab-size: 3; */
+      }
+      pre {
+        margin-block: 0;
+      }
+      .word-1,
+      .word-3 {
+        // keyword, number
+        color: #f5c227;
+        text-shadow: 1px 1px 0 #0004;
+      }
+      .word-2 {
+        // operand
+        color: #c127f5;
+        /* text-shadow: 1px 1px 0 #0004; */
+      }
+      .word-4 {
+        // bool
+        color: #27f5c1;
+      }
+      .word-5 {
+        // nil
+        color: #f55a27;
+      }
+      .word-6 {
+        // string
+        color: #27f55a;
+      }
+      .word-7 {
+        // comment
+        color: #5c5b5655;
+      }
+    }
+    .code-area {
+      color: #5c594c00;
+      caret-color: black;
+      position: relative;
+      margin: 2rem;
+      border-left: 3px solid #00000000;
       // background-image: linear-gradient(#f1f1f1 50%, #f9f9f9 50%);
       font-family: Arial, Helvetica, sans-serif;
       background: transparent;
       background-size: 100% 4rem;
       border: none;
-      border-left: 3px solid #7d7979;
       width: 100%;
       height: auto;
       resize: none;

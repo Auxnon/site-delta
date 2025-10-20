@@ -1,21 +1,38 @@
 // const imHome = require("./assets/home.png");
 /** Build an svg icon out of a pixelated image and attach to target element */
 export default function attachIcon(target: HTMLElement, imageSrc: string) {
-  const img = new Image();
-  img.addEventListener("load", () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width + 2;
-    canvas.height = img.height + 2;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return;
-    ctx.drawImage(img, 1, 1, img.width, img.height);
+  let isSVG = false;
+  const split = imageSrc.split(".");
+  if (split.length > 1) {
+    const ext = split.pop();
 
-    if (target) {
-      walker(ctx, img.width + 2, img.height + 2, target);
-    }
-    img.removeEventListener("load", this as any);
-  });
-  img.src = imageSrc;
+    isSVG = ext === "svg";
+  }
+  if (isSVG) {
+    fetch(imageSrc)
+      .then((r) => r.text())
+      .then((text) => {
+          // text=text.replace(/(^|[^\\])"/g, '$1\\"');
+        applyIcon(target, `url('data:image/svg+xml,${text}')`);
+      });
+  } else {
+    const img = new Image();
+    img.addEventListener("load", () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width + 2;
+      canvas.height = img.height + 2;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return;
+      ctx.drawImage(img, 1, 1, img.width, img.height);
+
+      if (target) {
+        walker(ctx, img.width + 2, img.height + 2, target);
+      }
+
+      img.removeEventListener("load", this as any);
+    });
+    img.src = imageSrc;
+  }
 }
 
 const lookup = [
@@ -49,7 +66,7 @@ function walker(
   img: CanvasRenderingContext2D,
   width: number,
   height: number,
-  target: HTMLElement
+  target: HTMLElement,
 ) {
   let checked = Array(width);
   let bools = Array(width);
@@ -83,7 +100,10 @@ function walker(
   const stroke = "none"; //rgb(150,000,250)";
   const fill = "white";
   const background = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" height="48" viewBox="0 0 18 18" width="48" ><path stroke-width=".5" stroke="${stroke}" fill="${fill}" d="${d}"/></svg>')`;
+  applyIcon(target, background);
+}
 
+function applyIcon(target: HTMLElement, background: string) {
   let icon;
   if (target.classList.contains("app-icon")) {
     icon = target;

@@ -40,7 +40,7 @@ export class Renderer {
       45,
       window.innerWidth / window.innerHeight,
       1,
-      5000
+      5000,
     );
     this.camera.position.z = 100; //400
     this.camera.position.y = -200; //-800
@@ -74,7 +74,7 @@ export class Renderer {
     modelName: string,
     texture?: boolean,
     color?: THREE.ColorRepresentation,
-    basic?: boolean
+    basic?: boolean,
   ): Promise<THREE.Group> {
     const promise = new Promise<THREE.Group>((resolve, reject) => {
       this.loader.load(
@@ -141,7 +141,7 @@ export class Renderer {
           // called when loading has errors
           console.error("An error happened", error);
           reject(error);
-        }
+        },
       );
     });
     return promise;
@@ -165,7 +165,7 @@ export class Renderer {
     delta /= 1000.0;
     this.lastTime = time;
     if (this.activeApp) {
-      this.activeApp.animate(delta);
+      if (this.activeApp.animate) this.activeApp.animate(delta);
       this.renderer.render(this.getScene(), this.camera);
     }
     //composer.render();
@@ -174,7 +174,7 @@ export class Renderer {
 
   dumpImage(img): HTMLElement {
     let list: HTMLElement[] = Array.from(
-      document.querySelectorAll("#afterImage")
+      document.querySelectorAll("#afterImage"),
     );
     let dom;
     if (!list.length) {
@@ -537,7 +537,7 @@ function cubit(w,h,d,x,y,z,color,layer){
     let mat;
     if(color)
         mat=new THREE.MeshStandardMaterial( { color: parseInt(color)} );
-    
+
     let model = new THREE.Mesh( geom,mat);
     model.position.x=x;
     model.position.y=y;
