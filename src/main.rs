@@ -1,10 +1,11 @@
 use axum::{
     body::Body,
     extract::Host,
-    http::{Request, Response},
+    http::{Request, Response, StatusCode},
     routing::{any, get, post},
     Json, Router,
 };
+use hyper::{client::HttpConnector, Client, Uri};
 use axum_server::tls_rustls::RustlsConfig;
 use std::net::SocketAddr;
 use tower::ServiceExt;
@@ -58,6 +59,7 @@ async fn main() {
                 println!("hostname: {}", hostname);
                 match hostname.as_str() {
                     "petrichor64.app" => petrichor_serve().oneshot(request).await,
+                    "share.makeavoy.com" => share_serve().oneshot(request).await,
                     _ => makeavoy_serve().oneshot(request).await,
                 }
             })
@@ -97,6 +99,84 @@ fn makeavoy_serve() -> Router {
         .nest_service("/blog", blog)
         .nest_service("/archive", archive)
         .fallback_service(serve_dir)
+}
+
+// share.makeavoy.com — reverse proxy to Node.js on port 3000
+fn share_serve() -> Router {
+    Router::new().fallback(share_proxy_handler)
+}
+
+async fn share_proxy_handler(mut req: Request<Body>) -> Response<Body> {
+    let path_and_query = req
+        .uri()
+        .path_and_query()
+        .map(|pq| pq.as_str().to_string())
+        .unwrap_or_else(|| "/".to_string());
+
+    let backend_uri = format!("http://127.0.0.1:3000{}", path_and_query)
+        .parse::<Uri>()
+        .unwrap_or_else(|_| Uri::from_static("http://127.0.0.1:3000/"));
+
+    let is_upgrade = req.headers().get(axum::http::header::UPGRADE).is_some();
+
+    *req.uri_mut() = backend_uri;
+    req.headers_mut().remove(axum::http::header::HOST);
+
+    let client: Client<HttpConnector, Body> = Client::new();
+
+    if is_upgrade {
+        let on_upgrade = hyper::upgrade::on(&mut req);
+
+        let backend_resp = match client.request(req).await {
+            Ok(resp) => resp,
+            Err(e) => {
+                eprintln!("share proxy connect error: {}", e);
+                return Response::builder()
+                    .status(StatusCode::BAD_GATEWAY)
+                    .body(Body::empty())
+                    .unwrap();
+            }
+        };
+
+        if backend_resp.status() == StatusCode::SWITCHING_PROTOCOLS {
+            let mut client_resp_builder =
+                Response::builder().status(StatusCode::SWITCHING_PROTOCOLS);
+            for (name, value) in backend_resp.headers() {
+                client_resp_builder = client_resp_builder.header(name, value);
+            }
+
+            let backend_on_upgrade = hyper::upgrade::on(backend_resp);
+
+            tokio::spawn(async move {
+                match tokio::try_join!(on_upgrade, backend_on_upgrade) {
+                    Ok((mut client_conn, mut backend_conn)) => {
+                        if let Err(e) =
+                            tokio::io::copy_bidirectional(&mut client_conn, &mut backend_conn)
+                                .await
+                        {
+                            eprintln!("share websocket copy error: {}", e);
+                        }
+                    }
+                    Err(e) => eprintln!("share websocket upgrade error: {}", e),
+                }
+            });
+
+            client_resp_builder.body(Body::empty()).unwrap()
+        } else {
+            backend_resp
+        }
+    } else {
+        match client.request(req).await {
+            Ok(resp) => resp,
+            Err(e) => {
+                eprintln!("share proxy error: {}", e);
+                Response::builder()
+                    .status(StatusCode::BAD_GATEWAY)
+                    .body(Body::empty())
+                    .unwrap()
+            }
+        }
+    }
 }
 
 async fn serve(app: Router, port: u16, address: [u8; 4], pems: Option<(String, String)>) {
