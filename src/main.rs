@@ -120,6 +120,7 @@ async fn share_proxy_handler(mut req: Request<Body>) -> Response<Body> {
     let is_upgrade = req.headers().get(axum::http::header::UPGRADE).is_some();
 
     *req.uri_mut() = backend_uri;
+    *req.version_mut() = hyper::Version::HTTP_11;
     req.headers_mut().remove(axum::http::header::HOST);
 
     let client: Client<HttpConnector, Body> = Client::new();
