@@ -1,7 +1,7 @@
 use axum::{
     body::Body,
     extract::Host,
-    http::{Request, Response, StatusCode},
+    http::{HeaderValue, Request, Response, StatusCode},
     routing::{any, get, post},
     Json, Router,
 };
@@ -106,6 +106,29 @@ fn share_serve() -> Router {
     Router::new().fallback(share_proxy_handler)
 }
 
+fn strip_hop_by_hop_headers(headers: &mut axum::http::HeaderMap) {
+    // Remove any headers named in the Connection header before removing Connection itself
+    let extra: Vec<String> = headers
+        .get_all(axum::http::header::CONNECTION)
+        .iter()
+        .flat_map(|v| {
+            v.to_str()
+                .unwrap_or("")
+                .split(',')
+                .map(|s| s.trim().to_lowercase())
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    for name in &extra {
+        headers.remove(name.as_str());
+    }
+    headers.remove(axum::http::header::CONNECTION);
+    headers.remove(axum::http::header::TRANSFER_ENCODING);
+    headers.remove(axum::http::header::TE);
+    headers.remove("keep-alive");
+    headers.remove("trailers");
+}
+
 async fn share_proxy_handler(mut req: Request<Body>) -> Response<Body> {
     let path_and_query = req
         .uri()
@@ -122,6 +145,15 @@ async fn share_proxy_handler(mut req: Request<Body>) -> Response<Body> {
     *req.uri_mut() = backend_uri;
     *req.version_mut() = hyper::Version::HTTP_11;
     req.headers_mut().remove(axum::http::header::HOST);
+    strip_hop_by_hop_headers(req.headers_mut());
+    if is_upgrade {
+        // Re-add Connection: Upgrade after stripping so the backend sees a
+        // well-formed HTTP/1.1 upgrade handshake.
+        req.headers_mut().insert(
+            axum::http::header::CONNECTION,
+            HeaderValue::from_static("Upgrade"),
+        );
+    }
 
     let client: Client<HttpConnector, Body> = Client::new();
 
