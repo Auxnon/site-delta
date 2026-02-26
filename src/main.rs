@@ -103,67 +103,93 @@ fn makeavoy_serve() -> Router {
 
 // share.makeavoy.com — reverse proxy to Node.js on port 3000
 fn share_serve() -> Router {
-    Router::new().fallback(share_proxy_handler)
+    // Share one Client (and its connection pool) across all proxied requests so
+    // the pool isn't dropped while response bodies are still being streamed.
+    let client: Client<HttpConnector, Body> = Client::new();
+    Router::new().fallback(move |req| {
+        let client = client.clone();
+        share_proxy_handler(client, req)
+    })
 }
 
-fn strip_hop_by_hop_headers(headers: &mut axum::http::HeaderMap) {
-    // Remove any headers named in the Connection header before removing Connection itself
-    let extra: Vec<String> = headers
-        .get_all(axum::http::header::CONNECTION)
-        .iter()
-        .flat_map(|v| {
-            v.to_str()
-                .unwrap_or("")
-                .split(',')
-                .map(|s| s.trim().to_lowercase())
-                .collect::<Vec<_>>()
-        })
-        .collect();
-    for name in &extra {
-        headers.remove(name.as_str());
-    }
-    headers.remove(axum::http::header::CONNECTION);
-    headers.remove(axum::http::header::TRANSFER_ENCODING);
-    headers.remove(axum::http::header::TE);
-    headers.remove("keep-alive");
-    headers.remove("trailers");
+fn is_hop_by_hop(name: &str) -> bool {
+    matches!(
+        name,
+        "connection"
+            | "transfer-encoding"
+            | "te"
+            | "keep-alive"
+            | "trailers"
+            | "proxy-authorization"
+            | "proxy-connection"
+    )
 }
 
-async fn share_proxy_handler(mut req: Request<Body>) -> Response<Body> {
+async fn share_proxy_handler(
+    client: Client<HttpConnector, Body>,
+    mut req: Request<Body>,
+) -> Response<Body> {
+    let method = req.method().clone();
     let path_and_query = req
         .uri()
         .path_and_query()
         .map(|pq| pq.as_str().to_string())
         .unwrap_or_else(|| "/".to_string());
 
-    let backend_uri = format!("http://127.0.0.1:3000{}", path_and_query)
-        .parse::<Uri>()
+    let backend_uri: Uri = format!("http://127.0.0.1:3000{}", path_and_query)
+        .parse()
         .unwrap_or_else(|_| Uri::from_static("http://127.0.0.1:3000/"));
 
     let is_upgrade = req.headers().get(axum::http::header::UPGRADE).is_some();
+    let upgrade_value = req.headers().get(axum::http::header::UPGRADE).cloned();
 
-    *req.uri_mut() = backend_uri;
-    *req.version_mut() = hyper::Version::HTTP_11;
-    req.headers_mut().remove(axum::http::header::HOST);
-    strip_hop_by_hop_headers(req.headers_mut());
-    if is_upgrade {
-        // Re-add Connection: Upgrade after stripping so the backend sees a
-        // well-formed HTTP/1.1 upgrade handshake.
-        req.headers_mut().insert(
-            axum::http::header::CONNECTION,
-            HeaderValue::from_static("Upgrade"),
-        );
+    // Copy only non-hop-by-hop headers into a fresh header map
+    let mut headers = axum::http::HeaderMap::new();
+    for (name, value) in req.headers() {
+        if name.as_str() != "host" && !is_hop_by_hop(name.as_str()) {
+            headers.append(name, value.clone());
+        }
     }
 
-    let client: Client<HttpConnector, Body> = Client::new();
+    // Forward the original Host so the Node.js app sees the right hostname
+    headers.insert(
+        axum::http::header::HOST,
+        HeaderValue::from_static("share.makeavoy.com"),
+    );
 
     if is_upgrade {
+        // --- WebSocket / Upgrade path ---
         let on_upgrade = hyper::upgrade::on(&mut req);
 
-        let backend_resp = match client.request(req).await {
+        if let Some(ref uv) = upgrade_value {
+            headers.insert(axum::http::header::UPGRADE, uv.clone());
+            headers.insert(
+                axum::http::header::CONNECTION,
+                HeaderValue::from_static("Upgrade"),
+            );
+        }
+
+        let mut backend_req = match Request::builder()
+            .method(method)
+            .uri(backend_uri)
+            .version(hyper::Version::HTTP_11)
+            .body(Body::empty())
+        {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("share proxy build error: {}", e);
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::empty())
+                    .unwrap();
+            }
+        };
+        *backend_req.headers_mut() = headers;
+
+        let backend_resp = match client.request(backend_req).await {
             Ok(resp) => resp,
             Err(e) => {
-                eprintln!("share proxy connect error: {}", e);
+                eprintln!("share proxy upgrade error: {}", e);
                 return Response::builder()
                     .status(StatusCode::BAD_GATEWAY)
                     .body(Body::empty())
@@ -199,7 +225,31 @@ async fn share_proxy_handler(mut req: Request<Body>) -> Response<Body> {
             backend_resp
         }
     } else {
-        match client.request(req).await {
+        // --- Normal HTTP proxy path ---
+        // Buffer the body so the outgoing request has a known Content-Length,
+        // avoiding any HTTP/2-to-HTTP/1.1 streaming-body issues.
+        let body_bytes = hyper::body::to_bytes(req.into_body())
+            .await
+            .unwrap_or_default();
+
+        let mut backend_req = match Request::builder()
+            .method(method)
+            .uri(backend_uri)
+            .version(hyper::Version::HTTP_11)
+            .body(Body::from(body_bytes))
+        {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("share proxy build error: {}", e);
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::empty())
+                    .unwrap();
+            }
+        };
+        *backend_req.headers_mut() = headers;
+
+        match client.request(backend_req).await {
             Ok(resp) => resp,
             Err(e) => {
                 eprintln!("share proxy error: {}", e);
