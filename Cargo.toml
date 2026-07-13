@@ -12,7 +12,7 @@ dev=[]
 linker = "arm-linux-gnueabihf-gcc"
 
 [dependencies]
-axum="0.6.4"
+axum={version="0.6.4", features=["multipart"]}
 axum-server={version="0.4.7", features=["tls-rustls"]}
 tokio={version="1.25.0", features= ["full" ]}
 tower="0.4.13"
@@ -21,3 +21,5 @@ include_dir="0.7.3"
 mime_guess="2.0.4"
 rusqlite = "0.29.0"
 hyper = { version = "0.14", features = ["client", "http1"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

@@ -1,13 +1,17 @@
 use axum::{
     body::Body,
-    extract::Host,
+    extract::{Host, Multipart, Query},
     http::{HeaderValue, Request, Response, StatusCode},
+    response::{Html, IntoResponse},
     routing::{any, get, post},
     Json, Router,
 };
 use hyper::{client::HttpConnector, Client, Uri};
 use axum_server::tls_rustls::RustlsConfig;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::net::SocketAddr;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
 
@@ -95,10 +99,199 @@ fn makeavoy_serve() -> Router {
         // .route("/blog", post(blog_handler()))
         .route("/foo", get(|| async { "Hi from /foo" }))
         .route("/health", get(|| async { "ok" }))
+        .route("/todo", get(todo_page))
+        .route("/todo/api/feed", get(todo_get_feed).post(todo_update_feed))
+        .route("/todo/api/upload", post(todo_upload))
         .nest_service("/assets", assets)
         .nest_service("/blog", blog)
         .nest_service("/archive", archive)
         .fallback_service(serve_dir)
+}
+
+// --- /todo admin panel: keycode-gated editor for makeavoy-assets/feed.json ---
+
+const TODO_ACCESS_CODE: &str = "6969";
+const FEED_PATH: &str = "makeavoy-assets/feed.json";
+const UPLOADS_DIR: &str = "makeavoy-assets/uploads";
+
+#[derive(Serialize, Deserialize)]
+struct Feed {
+    version: String,
+    image: String,
+    items: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct CodeQuery {
+    code: String,
+}
+
+#[derive(Deserialize)]
+struct UpdateFeedRequest {
+    code: String,
+    image: String,
+    items: Vec<String>,
+}
+
+async fn todo_page() -> Html<&'static str> {
+    Html(include_str!("../todo-admin/index.html"))
+}
+
+async fn todo_get_feed(Query(q): Query<CodeQuery>) -> impl IntoResponse {
+    if q.code != TODO_ACCESS_CODE {
+        return (StatusCode::UNAUTHORIZED, Json(json!({"error": "invalid code"}))).into_response();
+    }
+    match tokio::fs::read_to_string(FEED_PATH).await {
+        Ok(contents) => match serde_json::from_str::<Feed>(&contents) {
+            Ok(feed) => (StatusCode::OK, Json(feed)).into_response(),
+            Err(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("failed to parse feed: {}", e)})),
+            )
+                .into_response(),
+        },
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("failed to read feed: {}", e)})),
+        )
+            .into_response(),
+    }
+}
+
+async fn todo_update_feed(Json(payload): Json<UpdateFeedRequest>) -> impl IntoResponse {
+    if payload.code != TODO_ACCESS_CODE {
+        return (StatusCode::UNAUTHORIZED, Json(json!({"error": "invalid code"}))).into_response();
+    }
+    if payload.items.len() != 5 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "exactly 5 items are required"})),
+        )
+            .into_response();
+    }
+
+    let version = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs().to_string())
+        .unwrap_or_else(|_| "0".to_string());
+
+    // The JSON is consumed by other clients that can't assume a base URL,
+    // so relative paths (e.g. from our own upload endpoint) must be made absolute.
+    let image = if payload.image.starts_with("http://") || payload.image.starts_with("https://") {
+        payload.image
+    } else if payload.image.starts_with('/') {
+        format!("https://makeavoy.com{}", payload.image)
+    } else {
+        format!("https://makeavoy.com/{}", payload.image)
+    };
+
+    let feed = Feed {
+        version,
+        image,
+        items: payload.items,
+    };
+
+    let contents = match serde_json::to_string_pretty(&feed) {
+        Ok(c) => c,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("failed to serialize feed: {}", e)})),
+            )
+                .into_response()
+        }
+    };
+
+    match tokio::fs::write(FEED_PATH, contents).await {
+        Ok(_) => (StatusCode::OK, Json(json!({"ok": true}))).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("failed to write feed: {}", e)})),
+        )
+            .into_response(),
+    }
+}
+
+async fn todo_upload(mut multipart: Multipart) -> impl IntoResponse {
+    let mut code_ok = false;
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut content_type: Option<String> = None;
+
+    loop {
+        let field = match multipart.next_field().await {
+            Ok(Some(f)) => f,
+            Ok(None) => break,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": format!("malformed upload: {}", e)})),
+                )
+                    .into_response()
+            }
+        };
+        match field.name().unwrap_or("") {
+            "code" => {
+                code_ok = field.text().await.unwrap_or_default() == TODO_ACCESS_CODE;
+            }
+            "file" => {
+                content_type = field.content_type().map(|s| s.to_string());
+                file_bytes = field.bytes().await.ok().map(|b| b.to_vec());
+            }
+            _ => {}
+        }
+    }
+
+    if !code_ok {
+        return (StatusCode::UNAUTHORIZED, Json(json!({"error": "invalid code"}))).into_response();
+    }
+
+    let bytes = match file_bytes {
+        Some(b) if !b.is_empty() => b,
+        _ => {
+            return (StatusCode::BAD_REQUEST, Json(json!({"error": "missing file"})))
+                .into_response()
+        }
+    };
+
+    // Only accept real PNGs: check declared content-type and the PNG file signature.
+    const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    let declared_png = content_type.as_deref() == Some("image/png");
+    let starts_with_signature = bytes.len() >= 8 && bytes[..8] == PNG_SIGNATURE;
+    if !declared_png || !starts_with_signature {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "only .png files are allowed"})),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = tokio::fs::create_dir_all(UPLOADS_DIR).await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("failed to create uploads dir: {}", e)})),
+        )
+            .into_response();
+    }
+
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let filename = format!("{}.png", millis);
+    let path = format!("{}/{}", UPLOADS_DIR, filename);
+
+    match tokio::fs::write(&path, &bytes).await {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(json!({"url": format!("/assets/uploads/{}", filename)})),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("failed to save file: {}", e)})),
+        )
+            .into_response(),
+    }
 }
 
 // share.makeavoy.com — reverse proxy to Node.js on port 3000

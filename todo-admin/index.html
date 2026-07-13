@@ -1,0 +1,173 @@
+<title>Feed Admin</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #111;
+    color: #eee;
+    max-width: 560px;
+    margin: 40px auto;
+    padding: 0 16px;
+  }
+  h1 { font-size: 20px; }
+  input[type="text"], input[type="url"] {
+    width: 100%;
+    padding: 8px;
+    margin: 4px 0 12px;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    color: #eee;
+    border-radius: 4px;
+  }
+  label { font-size: 13px; color: #aaa; }
+  button {
+    padding: 8px 16px;
+    background: #3a7bd5;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:hover { background: #2f65ad; }
+  #preview {
+    max-width: 100%;
+    max-height: 240px;
+    display: block;
+    margin: 8px 0 16px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #1e1e1e;
+  }
+  #status { margin-top: 12px; font-size: 13px; white-space: pre-wrap; }
+  #gate { text-align: center; margin-top: 80px; }
+  hr { border-color: #333; margin: 20px 0; }
+  .hidden { display: none; }
+</style>
+
+<div id="gate">
+  <h1>Enter access code</h1>
+  <input id="code-input" type="text" inputmode="numeric" placeholder="code" style="max-width:160px;margin:0 auto 12px;text-align:center;" />
+  <br />
+  <button id="unlock-btn">Unlock</button>
+  <div id="gate-status"></div>
+</div>
+
+<div id="panel" class="hidden">
+  <h1>Update Feed</h1>
+
+  <label>Image URL</label>
+  <input id="image-url" type="url" placeholder="https://example.com/image.png" />
+
+  <label>...or upload a PNG</label>
+  <input id="image-file" type="file" accept="image/png" />
+
+  <img id="preview" alt="preview" />
+
+  <hr />
+
+  <label>List items (5)</label>
+  <input class="item" type="text" placeholder="Item 1" />
+  <input class="item" type="text" placeholder="Item 2" />
+  <input class="item" type="text" placeholder="Item 3" />
+  <input class="item" type="text" placeholder="Item 4" />
+  <input class="item" type="text" placeholder="Item 5" />
+
+  <button id="save-btn">Save</button>
+  <div id="status"></div>
+</div>
+
+<script>
+  let code = "";
+
+  const gate = document.getElementById("gate");
+  const panel = document.getElementById("panel");
+  const codeInput = document.getElementById("code-input");
+  const unlockBtn = document.getElementById("unlock-btn");
+  const gateStatus = document.getElementById("gate-status");
+
+  const imageUrl = document.getElementById("image-url");
+  const imageFile = document.getElementById("image-file");
+  const preview = document.getElementById("preview");
+  const items = document.querySelectorAll(".item");
+  const saveBtn = document.getElementById("save-btn");
+  const status = document.getElementById("status");
+
+  function updatePreview() {
+    if (imageUrl.value) preview.src = imageUrl.value;
+  }
+  imageUrl.addEventListener("input", updatePreview);
+
+  async function unlock() {
+    code = codeInput.value.trim();
+    gateStatus.textContent = "checking...";
+    try {
+      const res = await fetch("/todo/api/feed?code=" + encodeURIComponent(code));
+      if (!res.ok) {
+        gateStatus.textContent = "invalid code";
+        return;
+      }
+      const feed = await res.json();
+      imageUrl.value = feed.image || "";
+      updatePreview();
+      (feed.items || []).forEach((v, i) => {
+        if (items[i]) items[i].value = v;
+      });
+      gate.classList.add("hidden");
+      panel.classList.remove("hidden");
+    } catch (e) {
+      gateStatus.textContent = "error: " + e;
+    }
+  }
+  unlockBtn.addEventListener("click", unlock);
+  codeInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") unlock();
+  });
+
+  imageFile.addEventListener("change", async () => {
+    const file = imageFile.files[0];
+    if (!file) return;
+    if (file.type !== "image/png") {
+      status.textContent = "only .png files are allowed";
+      imageFile.value = "";
+      return;
+    }
+    status.textContent = "uploading...";
+    const form = new FormData();
+    form.append("code", code);
+    form.append("file", file);
+    try {
+      const res = await fetch("/todo/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        status.textContent = "upload failed: " + (data.error || res.status);
+        return;
+      }
+      imageUrl.value = data.url;
+      updatePreview();
+      status.textContent = "uploaded: " + data.url;
+    } catch (e) {
+      status.textContent = "upload error: " + e;
+    }
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const payload = {
+      code,
+      image: imageUrl.value,
+      items: Array.from(items).map((i) => i.value),
+    };
+    status.textContent = "saving...";
+    try {
+      const res = await fetch("/todo/api/feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      status.textContent = res.ok ? "saved!" : "save failed: " + (data.error || res.status);
+    } catch (e) {
+      status.textContent = "save error: " + e;
+    }
+  });
+</script>
