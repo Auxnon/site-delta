@@ -13,6 +13,8 @@ linker = "arm-linux-gnueabihf-gcc"
 
 [dependencies]
 axum="0.6.4"
+# the client half, to pass sosh.makeavoy.com through to the sosh server
+hyper={version="0.14", features=["client", "http1", "tcp"]}
 axum-server={version="0.4.7", features=["tls-rustls"]}
 tokio={version="1.25.0", features= ["full" ]}
 tower="0.4.13"

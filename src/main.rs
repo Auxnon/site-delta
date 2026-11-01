@@ -1,11 +1,13 @@
 use axum::{
     body::Body,
-    extract::Host,
-    http::{Request, Response},
+    extract::{ConnectInfo, Host},
+    http::{header, HeaderValue, Request, Response, StatusCode, Uri, Version},
+    response::IntoResponse,
     routing::{any, get, post},
     Json, Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
+use hyper::client::HttpConnector;
 use std::net::SocketAddr;
 use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
@@ -53,20 +55,108 @@ async fn main() {
     }
     #[cfg(not(feature = "dev"))]
     {
+        let client: hyper::Client<HttpConnector> = hyper::Client::new();
         let router = Router::new().fallback_service({
-            any(|Host(hostname): Host, request: Request<Body>| async move {
-                println!("hostname: {}", hostname);
-                match hostname.as_str() {
-                    "petrichor64.app" => petrichor_serve().oneshot(request).await,
-                    _ => makeavoy_serve().oneshot(request).await,
-                }
-            })
+            any(
+                |Host(hostname): Host,
+                 ConnectInfo(peer): ConnectInfo<SocketAddr>,
+                 request: Request<Body>| async move {
+                    // the Host header can carry a port
+                    match hostname.split(':').next().unwrap_or("") {
+                        "petrichor64.app" => petrichor_serve().oneshot(request).await,
+                        SOSH_HOST => Ok(sosh_proxy(client, peer, request).await.into_response()),
+                        _ => makeavoy_serve().oneshot(request).await,
+                    }
+                },
+            )
         });
         tokio::join!(
             serve(router.clone(), 8080, address, None),
             serve(router, 443, address, pems),
         );
     }
+}
+
+// sosh.makeavoy.com: everything goes to the sosh server (Phoenix, in a
+// container on this machine; github.com/Auxnon/sosh, deploy/README.md),
+// websockets included. SOSH_UPSTREAM overrides where it listens.
+const SOSH_HOST: &str = "sosh.makeavoy.com";
+
+fn sosh_upstream() -> String {
+    std::env::var("SOSH_UPSTREAM").unwrap_or_else(|_| "127.0.0.1:4000".to_string())
+}
+
+async fn sosh_proxy(
+    client: hyper::Client<HttpConnector>,
+    peer: SocketAddr,
+    mut request: Request<Body>,
+) -> Response<Body> {
+    let path = request
+        .uri()
+        .path_and_query()
+        .map(|p| p.as_str())
+        .unwrap_or("/");
+    let uri: Uri = match format!("http://{}{}", sosh_upstream(), path).parse() {
+        Ok(u) => u,
+        Err(_) => return status(StatusCode::BAD_REQUEST),
+    };
+
+    // Who's asking, for sosh's rate limits: Cloudflare's word for it when the
+    // request came through Cloudflare, else whoever connected. Set, never
+    // appended to, so a client can't pick its own.
+    let real_ip = request
+        .headers()
+        .get("cf-connecting-ip")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.trim().parse::<std::net::IpAddr>().ok())
+        .unwrap_or(peer.ip())
+        .to_string();
+
+    // A websocket: hold on to the client's side of the upgrade, to splice to
+    // the server's once it agrees (101).
+    let wants_upgrade = request.headers().contains_key(header::UPGRADE);
+    let client_side = wants_upgrade.then(|| hyper::upgrade::on(&mut request));
+
+    *request.uri_mut() = uri;
+    // the server speaks HTTP/1.1, whatever the client spoke to us
+    *request.version_mut() = Version::HTTP_11;
+    let headers = request.headers_mut();
+    if let Ok(v) = HeaderValue::from_str(&real_ip) {
+        headers.insert("x-real-ip", v);
+    }
+    headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
+    if !headers.contains_key(header::HOST) {
+        headers.insert(header::HOST, HeaderValue::from_static(SOSH_HOST));
+    }
+
+    let mut response = match client.request(request).await {
+        Ok(r) => r,
+        Err(e) => {
+            println!("sosh upstream: {}", e);
+            return status(StatusCode::BAD_GATEWAY);
+        }
+    };
+
+    if response.status() == StatusCode::SWITCHING_PROTOCOLS {
+        if let Some(client_side) = client_side {
+            let server_side = hyper::upgrade::on(&mut response);
+            tokio::spawn(async move {
+                match (client_side.await, server_side.await) {
+                    (Ok(mut c), Ok(mut s)) => {
+                        let _ = tokio::io::copy_bidirectional(&mut c, &mut s).await;
+                    }
+                    (c, s) => println!("sosh websocket upgrade failed: {:?} {:?}", c.err(), s.err()),
+                }
+            });
+        }
+    }
+    response
+}
+
+fn status(code: StatusCode) -> Response<Body> {
+    let mut r = Response::new(Body::empty());
+    *r.status_mut() = code;
+    r
 }
 
 // Petrichor.app website
@@ -106,7 +196,7 @@ async fn serve(app: Router, port: u16, address: [u8; 4], pems: Option<(String, S
         if let Ok(config) = RustlsConfig::from_pem_file(full, private).await {
             println!("serving with tls");
             axum_server::bind_rustls(addr, config)
-                .serve(app.into_make_service())
+                .serve(app.into_make_service_with_connect_info::<SocketAddr>())
                 .await
                 .unwrap();
         } else {
@@ -115,7 +205,7 @@ async fn serve(app: Router, port: u16, address: [u8; 4], pems: Option<(String, S
     } else {
         println!("serving without tls on localhost:{}", port);
         axum_server::bind(SocketAddr::from((address, port)))
-            .serve(app.into_make_service())
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
             .await
             .unwrap();
     }
