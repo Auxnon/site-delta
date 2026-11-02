@@ -1,0 +1,45 @@
+From 8b03ed871f3ed5330a25c96546c1e744abe62f8f Mon Sep 17 00:00:00 2001
+From: Nick McAvoy <auxnon@gmail.com>
+Date: Sun, 1 Nov 2026 19:33:35 -0500
+Subject: [PATCH] fix(wasm): the wasm feature builds again
+
+`lsp_wasm` carried #[wasm_bindgen] inside a plain `impl Compiler`, which
+wasm-bindgen rejects; the free `lsp` function is the JS export, so the
+method no longer is. `wasm` also needs serde_json (both LSP exports return
+JSON), which became optional with lsp-server.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_013h3yeJzbXiDy6fAcY5JyxQ
+---
+ Cargo.toml      | 2 +-
+ src/compiler.rs | 1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index e4e4310..6f9e94c 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -67,7 +67,7 @@ silt = [
+     "arrow",
+     # "vectors",
+ ]
+-wasm=["wasm-bindgen", "serde", "serde-wasm-bindgen"]
++wasm=["wasm-bindgen", "serde", "serde-wasm-bindgen", "dep:serde_json"]
+ under-number = []
+ bang = []
+ global = []
+diff --git a/src/compiler.rs b/src/compiler.rs
+index 5552756..89de856 100644
+--- a/src/compiler.rs
++++ b/src/compiler.rs
+@@ -1506,7 +1506,6 @@ fn set_trailing_vararg(&mut self,bool: bool){
+     }
+ 
+     #[cfg(feature = "wasm")]
+-    #[wasm_bindgen]
+     pub fn lsp_wasm(&mut self, source: &str, format: bool) -> String {
+         let output = self.lsp(source, format);
+         serde_json::to_string(&output).unwrap_or_else(|_| "{}".to_string())
+-- 
+2.56.0
+

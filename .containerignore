@@ -1,0 +1,10 @@
+.git
+target
+**/node_modules
+makeavoy-dist
+petrichor-dist
+archive
+Blog
+NewWave-master
+config.txt
+*.pem
