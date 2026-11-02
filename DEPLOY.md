@@ -79,7 +79,8 @@ In `/etc/nixos/configuration.nix`, or a module it imports:
       "/var/lib/site-delta/certs:/certs:ro"
     ];
     # host network: binds 443 and 8080 on the machine, reaches sosh on 127.0.0.1:4000
-    extraOptions = [ "--network=host" ];
+    # --init: as PID 1 the server would ignore SIGTERM, so every stop waited 10s for a kill
+    extraOptions = [ "--network=host" "--init" ];
     # environment.SOSH_UPSTREAM = "127.0.0.1:4000";   # the default
   };
   networking.firewall.allowedTCPPorts = [ 443 8080 ];
