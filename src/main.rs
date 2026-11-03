@@ -69,9 +69,12 @@ async fn main() {
                     match hostname.split(':').next().unwrap_or("") {
                         "petrichor64.app" => petrichor_serve().oneshot(request).await,
                         SOSH_HOST => Ok(sosh_proxy(client, peer, request).await.into_response()),
-                        // share.makeavoy.com (share_serve, a Node app on :3000) is off
-                        // while nothing runs there; to turn it back on:
-                        // "share.makeavoy.com" => share_serve().oneshot(request).await,
+                        "share.makeavoy.com" => {
+                            proxy_serve(3000, "share.makeavoy.com").oneshot(request).await
+                        }
+                        "be.makeavoy.com" => {
+                            proxy_serve(5173, "be.makeavoy.com").oneshot(request).await
+                        }
                         _ => makeavoy_serve().oneshot(request).await,
                     }
                 },
@@ -253,12 +256,16 @@ struct UpdateFeedRequest {
 }
 
 #[derive(Deserialize, Clone, Copy, PartialEq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 enum FitMode {
     // Distort the image to exactly fill the target dimensions.
     Stretch,
-    // Preserve aspect ratio, letterboxing the remainder in white.
+    // Preserve aspect ratio, letterboxing whatever doesn't fit in white.
     Pad,
+    // Match the target height exactly; crop or letterbox the sides.
+    CropHeight,
+    // Match the target width exactly; crop or letterbox the top/bottom.
+    CropWidth,
 }
 
 impl Default for FitMode {
@@ -376,10 +383,39 @@ async fn fetch_url_bytes(url: &str) -> Result<Vec<u8>, String> {
     Ok(bytes.to_vec())
 }
 
-// Resize to the exact eink panel dimensions (stretched or letterboxed per `fit`),
-// optionally brighten ("dodge") the image since washed-out art survives the panel's
-// 1-bit dither better than dark/saturated art, then dither to black/white and pack
-// into an uncompressed 1-bit BMP the device can render without any on-device decode.
+// Places `resized` in the center of a target_w x target_h white canvas, independently
+// per axis: an axis that's already >= the target is center-cropped to it, an axis
+// that's smaller is centered with white on both sides (letterboxed). Pad ends up with
+// both axes always <= target (never crops); CropWidth/CropHeight force one axis to
+// match exactly and let this handle whatever the other axis needs.
+fn compose_centered(resized: &image::RgbaImage, target_w: u32, target_h: u32) -> image::DynamicImage {
+    let (rw, rh) = (resized.width(), resized.height());
+    let mut canvas =
+        image::RgbaImage::from_pixel(target_w, target_h, image::Rgba([255, 255, 255, 255]));
+
+    let (src_x, dst_x, copy_w) = if rw >= target_w {
+        ((rw - target_w) / 2, 0, target_w)
+    } else {
+        (0, (target_w - rw) / 2, rw)
+    };
+    let (src_y, dst_y, copy_h) = if rh >= target_h {
+        ((rh - target_h) / 2, 0, target_h)
+    } else {
+        (0, (target_h - rh) / 2, rh)
+    };
+
+    for y in 0..copy_h {
+        for x in 0..copy_w {
+            canvas.put_pixel(dst_x + x, dst_y + y, *resized.get_pixel(src_x + x, src_y + y));
+        }
+    }
+    image::DynamicImage::ImageRgba8(canvas)
+}
+
+// Resize to the exact eink panel dimensions per `fit`, optionally brighten ("dodge")
+// the image since washed-out art survives the panel's 1-bit dither better than
+// dark/saturated art, then dither to black/white and pack into an uncompressed 1-bit
+// BMP the device can render without any on-device decode.
 fn process_for_eink(
     bytes: &[u8],
     target_w: u32,
@@ -389,26 +425,25 @@ fn process_for_eink(
     dodge_amount: i32,
 ) -> Result<Vec<u8>, String> {
     let img = image::load_from_memory(bytes).map_err(|e| e.to_string())?;
+    let filter = image::imageops::FilterType::Lanczos3;
 
     let mut img = match fit {
-        FitMode::Stretch => {
-            img.resize_exact(target_w, target_h, image::imageops::FilterType::Lanczos3)
-        }
+        FitMode::Stretch => img.resize_exact(target_w, target_h, filter),
         FitMode::Pad => {
-            let resized = img
-                .resize(target_w, target_h, image::imageops::FilterType::Lanczos3)
-                .to_rgba8();
-            let (rw, rh) = (resized.width(), resized.height());
-            let off_x = (target_w - rw) / 2;
-            let off_y = (target_h - rh) / 2;
-            let mut canvas =
-                image::RgbaImage::from_pixel(target_w, target_h, image::Rgba([255, 255, 255, 255]));
-            for y in 0..rh {
-                for x in 0..rw {
-                    canvas.put_pixel(x + off_x, y + off_y, *resized.get_pixel(x, y));
-                }
-            }
-            image::DynamicImage::ImageRgba8(canvas)
+            let resized = img.resize(target_w, target_h, filter).to_rgba8();
+            compose_centered(&resized, target_w, target_h)
+        }
+        FitMode::CropHeight => {
+            let scale = target_h as f64 / img.height() as f64;
+            let new_w = ((img.width() as f64 * scale).round() as u32).max(1);
+            let resized = img.resize_exact(new_w, target_h, filter).to_rgba8();
+            compose_centered(&resized, target_w, target_h)
+        }
+        FitMode::CropWidth => {
+            let scale = target_w as f64 / img.width() as f64;
+            let new_h = ((img.height() as f64 * scale).round() as u32).max(1);
+            let resized = img.resize_exact(target_w, new_h, filter).to_rgba8();
+            compose_centered(&resized, target_w, target_h)
         }
     };
 
@@ -782,16 +817,15 @@ async fn todo_delete_upload(Json(payload): Json<DeleteUploadRequest>) -> impl In
     }
 }
 
-// share.makeavoy.com — reverse proxy to Node.js on port 3000. Not routed for
-// now (see main); kept for when it is.
-#[allow(dead_code)]
-fn share_serve() -> Router {
+// Reverse proxy to a local backend, e.g. share.makeavoy.com -> Node.js on 3000,
+// be.makeavoy.com -> Vite dev server on 5173
+fn proxy_serve(port: u16, host: &'static str) -> Router {
     // Share one Client (and its connection pool) across all proxied requests so
     // the pool isn't dropped while response bodies are still being streamed.
     let client: Client<HttpConnector, Body> = Client::new();
     Router::new().fallback(move |req| {
         let client = client.clone();
-        share_proxy_handler(client, req)
+        proxy_handler(client, port, host, req)
     })
 }
 
@@ -808,8 +842,10 @@ fn is_hop_by_hop(name: &str) -> bool {
     )
 }
 
-async fn share_proxy_handler(
+async fn proxy_handler(
     client: Client<HttpConnector, Body>,
+    port: u16,
+    host: &'static str,
     mut req: Request<Body>,
 ) -> Response<Body> {
     let method = req.method().clone();
@@ -819,9 +855,10 @@ async fn share_proxy_handler(
         .map(|pq| pq.as_str().to_string())
         .unwrap_or_else(|| "/".to_string());
 
-    let backend_uri: Uri = format!("http://127.0.0.1:3000{}", path_and_query)
-        .parse()
-        .unwrap_or_else(|_| Uri::from_static("http://127.0.0.1:3000/"));
+    let backend_uri: Uri = match format!("http://127.0.0.1:{}{}", port, path_and_query).parse() {
+        Ok(uri) => uri,
+        Err(_) => format!("http://127.0.0.1:{}/", port).parse().unwrap(),
+    };
 
     let is_upgrade = req.headers().get(axum::http::header::UPGRADE).is_some();
     let upgrade_value = req.headers().get(axum::http::header::UPGRADE).cloned();
@@ -834,11 +871,8 @@ async fn share_proxy_handler(
         }
     }
 
-    // Forward the original Host so the Node.js app sees the right hostname
-    headers.insert(
-        axum::http::header::HOST,
-        HeaderValue::from_static("share.makeavoy.com"),
-    );
+    // Forward the original Host so the backend sees the right hostname
+    headers.insert(axum::http::header::HOST, HeaderValue::from_static(host));
 
     if is_upgrade {
         // --- WebSocket / Upgrade path ---
@@ -860,7 +894,7 @@ async fn share_proxy_handler(
         {
             Ok(r) => r,
             Err(e) => {
-                eprintln!("share proxy build error: {}", e);
+                eprintln!("proxy proxy build error: {}", e);
                 return Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .body(Body::empty())
@@ -872,7 +906,7 @@ async fn share_proxy_handler(
         let backend_resp = match client.request(backend_req).await {
             Ok(resp) => resp,
             Err(e) => {
-                eprintln!("share proxy upgrade error: {}", e);
+                eprintln!("proxy proxy upgrade error: {}", e);
                 return Response::builder()
                     .status(StatusCode::BAD_GATEWAY)
                     .body(Body::empty())
@@ -896,10 +930,10 @@ async fn share_proxy_handler(
                             tokio::io::copy_bidirectional(&mut client_conn, &mut backend_conn)
                                 .await
                         {
-                            eprintln!("share websocket copy error: {}", e);
+                            eprintln!("proxy websocket copy error: {}", e);
                         }
                     }
-                    Err(e) => eprintln!("share websocket upgrade error: {}", e),
+                    Err(e) => eprintln!("proxy websocket upgrade error: {}", e),
                 }
             });
 
@@ -923,7 +957,7 @@ async fn share_proxy_handler(
         {
             Ok(r) => r,
             Err(e) => {
-                eprintln!("share proxy build error: {}", e);
+                eprintln!("proxy proxy build error: {}", e);
                 return Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .body(Body::empty())
@@ -935,7 +969,7 @@ async fn share_proxy_handler(
         match client.request(backend_req).await {
             Ok(resp) => resp,
             Err(e) => {
-                eprintln!("share proxy error: {}", e);
+                eprintln!("proxy proxy error: {}", e);
                 Response::builder()
                     .status(StatusCode::BAD_GATEWAY)
                     .body(Body::empty())

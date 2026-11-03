@@ -121,7 +121,9 @@
     border-radius: 8px;
     background: #000;
     max-height: 60vh;
+    transition: transform 0.15s;
   }
+  #camera-video.mirrored { transform: scaleX(-1); }
   .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
   .modal-btns button { flex: 1; }
   #camera-status { font-size: 13px; color: #d08a8a; margin-top: 10px; min-height: 16px; }
@@ -142,9 +144,9 @@
   }
   #xt-image {
     flex: 0 0 72.2%;
-    background-size: cover;
     background-position: center;
-    background-color: #ccc;
+    background-repeat: no-repeat;
+    background-color: #fff;
   }
   #xt-gap { flex: 0 0 2.53%; background: #fff; }
   #xt-rows { flex: 1 1 auto; display: flex; flex-direction: column; }
@@ -228,8 +230,10 @@
     <h2>Processing</h2>
     <label for="fit-mode">Fit</label>
     <select id="fit-mode">
-      <option value="pad">Fit with whitespace (keep aspect ratio)</option>
-      <option value="stretch">Stretch to fill</option>
+      <option value="crop_height" selected>Crop by height (fills height, trims/pads sides)</option>
+      <option value="crop_width">Crop by width (fills width, trims/pads top &amp; bottom)</option>
+      <option value="pad">Fit with whitespace (keep aspect ratio, no crop)</option>
+      <option value="stretch">Stretch to fill (distorts)</option>
     </select>
 
     <div class="checkbox-row">
@@ -282,6 +286,7 @@
     <video id="camera-video" autoplay playsinline muted></video>
     <canvas id="camera-canvas" class="hidden"></canvas>
     <div class="modal-btns">
+      <button type="button" id="camera-flip-btn" class="secondary">Flip</button>
       <button type="button" id="camera-capture-btn">Capture</button>
       <button type="button" id="camera-cancel-btn" class="secondary">Cancel</button>
     </div>
@@ -292,6 +297,7 @@
 <script>
   let code = "";
   let cameraStream = null;
+  let cameraFacingMode = "environment";
 
   const gate = document.getElementById("gate");
   const panel = document.getElementById("panel");
@@ -322,9 +328,19 @@
   const cameraModal = document.getElementById("camera-modal");
   const cameraVideo = document.getElementById("camera-video");
   const cameraCanvas = document.getElementById("camera-canvas");
+  const cameraFlipBtn = document.getElementById("camera-flip-btn");
   const cameraCaptureBtn = document.getElementById("camera-capture-btn");
   const cameraCancelBtn = document.getElementById("camera-cancel-btn");
   const cameraStatus = document.getElementById("camera-status");
+
+  // Mirrors process_for_eink's fit modes as CSS background-size equivalents so the
+  // preview actually shows the crop/letterbox the server will produce, not a guess.
+  const FIT_BACKGROUND_SIZE = {
+    pad: "contain",
+    stretch: "100% 100%",
+    crop_width: "100% auto",
+    crop_height: "auto 100%",
+  };
 
   function renderPreview() {
     if (imageUrl.value) preview.src = imageUrl.value;
@@ -334,6 +350,7 @@
     preview.style.filter = filter;
     xtImage.style.filter = filter;
     xtImage.style.backgroundImage = imageUrl.value ? "url('" + imageUrl.value + "')" : "none";
+    xtImage.style.backgroundSize = FIT_BACKGROUND_SIZE[fitMode.value] || "contain";
 
     const disabled = itemsDisabledCheck.checked;
     if (disabled) {
@@ -444,6 +461,7 @@
   }
 
   imageUrl.addEventListener("input", renderPreview);
+  fitMode.addEventListener("change", renderPreview);
   items.forEach((i) => i.addEventListener("input", renderPreview));
 
   dodgeCheck.addEventListener("change", () => {
@@ -531,18 +549,42 @@
     cameraVideo.srcObject = null;
   }
 
-  async function openCamera() {
+  // Only worth offering a flip if the device actually reports more than one camera.
+  async function updateCameraFlipVisibility() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter((d) => d.kind === "videoinput");
+      cameraFlipBtn.classList.toggle("hidden", videoInputs.length < 2);
+    } catch (e) {
+      // can't enumerate (older browser) — leave the flip button visible, it's harmless
+    }
+  }
+
+  async function startCameraStream() {
     cameraStatus.textContent = "";
-    cameraModal.classList.remove("hidden");
+    stopCamera();
+    // Hint the panel's own aspect ratio so the raw capture already needs minimal
+    // cropping instead of handing back an arbitrary landscape/4:3 sensor frame.
+    const targetAspect = itemsDisabledCheck.checked ? 528 / 792 : 528 / 572;
     try {
       cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: {
+          facingMode: { ideal: cameraFacingMode },
+          aspectRatio: { ideal: targetAspect },
+        },
         audio: false,
       });
       cameraVideo.srcObject = cameraStream;
+      cameraVideo.classList.toggle("mirrored", cameraFacingMode === "user");
+      updateCameraFlipVisibility();
     } catch (e) {
       cameraStatus.textContent = "camera unavailable: " + e.message;
     }
+  }
+
+  function openCamera() {
+    cameraModal.classList.remove("hidden");
+    startCameraStream();
   }
 
   function closeCamera() {
@@ -552,6 +594,10 @@
 
   cameraBtn.addEventListener("click", openCamera);
   cameraCancelBtn.addEventListener("click", closeCamera);
+  cameraFlipBtn.addEventListener("click", () => {
+    cameraFacingMode = cameraFacingMode === "environment" ? "user" : "environment";
+    startCameraStream();
+  });
 
   cameraCaptureBtn.addEventListener("click", () => {
     if (!cameraVideo.videoWidth) {
@@ -560,7 +606,13 @@
     }
     cameraCanvas.width = cameraVideo.videoWidth;
     cameraCanvas.height = cameraVideo.videoHeight;
-    cameraCanvas.getContext("2d").drawImage(cameraVideo, 0, 0);
+    const ctx = cameraCanvas.getContext("2d");
+    // Match what was captured to the mirrored selfie preview the user actually saw.
+    if (cameraFacingMode === "user") {
+      ctx.translate(cameraCanvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(cameraVideo, 0, 0);
     cameraCanvas.toBlob((blob) => {
       if (!blob) {
         cameraStatus.textContent = "capture failed, try again";
