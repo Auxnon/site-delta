@@ -8,11 +8,14 @@ host network:
 - `:443` is HTTPS, with the certificate named in `config.txt`.
 - `:8080` is plain HTTP.
 - Requests for `sosh.makeavoy.com` go to `127.0.0.1:4000`, which is sosh.
+- `share.makeavoy.com` (a proxy to a Node app on `:3000`) is in the code but
+  not routed; it gets the makeavoy.com site.
   Its runbook is `deploy/AGENT.md` in github.com/Auxnon/sosh.
 
 ## Rules
 
-- Never print or copy the private key. Don't overwrite
+- Never print or copy the private key or `/var/lib/site-delta/env`, and
+  never delete `/var/lib/site-delta/todo`. Don't overwrite
   `/var/lib/site-delta/config.txt` or the certificates if they exist.
 - Use `sudo podman`. The service runs as root and only sees root's images.
 - `nixos-rebuild test` first, `switch` once it's healthy.
@@ -63,6 +66,26 @@ If the certificates aren't in `/var/lib/site-delta/certs/` (`cert.pem` and
 `key.pem`, mode 600, owned by root), ask the owner for them. Don't generate
 self-signed ones, because Cloudflare strict rejects them.
 
+### /todo (the e-ink feed editor)
+
+`makeavoy.com/todo` edits `/assets/feed.json` and keeps its images in
+`/assets/uploads/`. Both live outside the image, so a rebuild keeps them:
+
+```sh
+sudo mkdir -p /var/lib/site-delta/todo/uploads
+sudo test -e /var/lib/site-delta/todo/feed.json || echo '{"version":"0","image":""}' \
+  | sudo tee /var/lib/site-delta/todo/feed.json
+```
+
+Its access code is `TODO_ACCESS_CODE` in a root-only env file. Without
+one, `/todo` refuses every code. Ask the owner for the code; if they want
+a fresh one, generate it and tell them what it is:
+
+```sh
+sudo test -e /var/lib/site-delta/env || sudo sh -c 'umask 077;
+  echo "TODO_ACCESS_CODE=$(openssl rand -hex 12)" > /var/lib/site-delta/env'
+```
+
 ## 4. The NixOS configuration
 
 In `/etc/nixos/configuration.nix`, or a module it imports:
@@ -77,7 +100,10 @@ In `/etc/nixos/configuration.nix`, or a module it imports:
     volumes = [
       "/var/lib/site-delta/config.txt:/site/config.txt:ro"
       "/var/lib/site-delta/certs:/certs:ro"
+      "/var/lib/site-delta/todo/feed.json:/site/makeavoy-assets/feed.json"
+      "/var/lib/site-delta/todo/uploads:/site/makeavoy-assets/uploads"
     ];
+    environmentFiles = [ "/var/lib/site-delta/env" ];   # TODO_ACCESS_CODE
     # host network: binds 443 and 8080 on the machine, reaches sosh on 127.0.0.1:4000
     # --init: as PID 1 the server would ignore SIGTERM, so every stop waited 10s for a kill
     extraOptions = [ "--network=host" "--init" ];

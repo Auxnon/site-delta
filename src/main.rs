@@ -203,7 +203,19 @@ fn makeavoy_serve() -> Router {
 
 // --- /todo admin panel: keycode-gated editor for makeavoy-assets/feed.json ---
 
-const TODO_ACCESS_CODE: &str = "6969";
+// The code comes from the TODO_ACCESS_CODE environment variable; without one
+// (or with an empty one) every request is refused, so /todo is off.
+fn todo_code_ok(given: &str) -> bool {
+    static CODE: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    let code = CODE.get_or_init(|| {
+        std::env::var("TODO_ACCESS_CODE")
+            .ok()
+            .map(|c| c.trim().to_string())
+            .filter(|c| !c.is_empty())
+    });
+    matches!(code, Some(c) if c.as_str() == given)
+}
+
 const FEED_PATH: &str = "makeavoy-assets/feed.json";
 const UPLOADS_DIR: &str = "makeavoy-assets/uploads";
 
@@ -266,7 +278,7 @@ async fn todo_page() -> Html<&'static str> {
 }
 
 async fn todo_get_feed(Query(q): Query<CodeQuery>) -> impl IntoResponse {
-    if q.code != TODO_ACCESS_CODE {
+    if !todo_code_ok(&q.code) {
         return (StatusCode::UNAUTHORIZED, Json(json!({"error": "invalid code"}))).into_response();
     }
     match tokio::fs::read_to_string(FEED_PATH).await {
@@ -298,13 +310,62 @@ fn local_upload_filename(image: &str) -> Option<String> {
     }
 }
 
+// Only public addresses: the server mustn't be a way into this machine or its
+// network (127.0.0.1:4000, the router, ...).
+fn is_public(ip: std::net::IpAddr) -> bool {
+    use std::net::IpAddr;
+    match ip {
+        IpAddr::V4(v4) => {
+            let o = v4.octets();
+            !(v4.is_private()
+                || v4.is_loopback()
+                || v4.is_link_local()
+                || v4.is_unspecified()
+                || v4.is_broadcast()
+                || v4.is_documentation()
+                || o[0] == 0
+                || (o[0] == 100 && (o[1] & 0xc0) == 64) // 100.64/10, carrier NAT
+                || o[0] >= 224) // multicast, reserved
+        }
+        IpAddr::V6(v6) => {
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return is_public(IpAddr::V4(v4));
+            }
+            let first = v6.segments()[0];
+            !(v6.is_loopback()
+                || v6.is_unspecified()
+                || (first & 0xfe00) == 0xfc00 // unique local
+                || (first & 0xffc0) == 0xfe80 // link local
+                || (first & 0xff00) == 0xff00) // multicast
+        }
+    }
+}
+
 async fn fetch_url_bytes(url: &str) -> Result<Vec<u8>, String> {
     const MAX_BYTES: usize = 25 * 1024 * 1024;
+    let parsed = reqwest::Url::parse(url).map_err(|e| e.to_string())?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return Err("image url must be http or https".to_string());
+    }
+    let host = parsed.host_str().ok_or("image url has no host")?.to_string();
+    let port = parsed.port_or_known_default().unwrap_or(443);
+    let addr = tokio::net::lookup_host((host.trim_matches(|c| c == '[' || c == ']'), port))
+        .await
+        .map_err(|e| e.to_string())?
+        .next()
+        .ok_or("image url's host doesn't resolve")?;
+    if !is_public(addr.ip()) {
+        return Err("image url must be a public address".to_string());
+    }
+    // connect to the address just checked (no second lookup), and follow no
+    // redirects, which could point anywhere
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(15))
+        .redirect(reqwest::redirect::Policy::none())
+        .resolve(&host, addr)
         .build()
         .map_err(|e| e.to_string())?;
-    let resp = client.get(url).send().await.map_err(|e| e.to_string())?;
+    let resp = client.get(parsed).send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
         return Err(format!("image url returned status {}", resp.status()));
     }
@@ -417,7 +478,7 @@ fn encode_1bit_bmp(img: &image::GrayImage) -> Vec<u8> {
 }
 
 async fn todo_update_feed(Json(payload): Json<UpdateFeedRequest>) -> impl IntoResponse {
-    if payload.code != TODO_ACCESS_CODE {
+    if !todo_code_ok(&payload.code) {
         return (StatusCode::UNAUTHORIZED, Json(json!({"error": "invalid code"}))).into_response();
     }
     if let Some(items) = &payload.items {
@@ -569,7 +630,7 @@ async fn todo_upload(mut multipart: Multipart) -> impl IntoResponse {
         };
         match field.name().unwrap_or("") {
             "code" => {
-                code_ok = field.text().await.unwrap_or_default() == TODO_ACCESS_CODE;
+                code_ok = todo_code_ok(&field.text().await.unwrap_or_default());
             }
             "file" => {
                 content_type = field.content_type().map(|s| s.to_string());
@@ -640,7 +701,7 @@ fn safe_upload_filename(name: &str) -> bool {
 }
 
 async fn todo_list_uploads(Query(q): Query<CodeQuery>) -> impl IntoResponse {
-    if q.code != TODO_ACCESS_CODE {
+    if !todo_code_ok(&q.code) {
         return (StatusCode::UNAUTHORIZED, Json(json!({"error": "invalid code"}))).into_response();
     }
 
@@ -682,7 +743,7 @@ async fn todo_list_uploads(Query(q): Query<CodeQuery>) -> impl IntoResponse {
 }
 
 async fn todo_delete_upload(Json(payload): Json<DeleteUploadRequest>) -> impl IntoResponse {
-    if payload.code != TODO_ACCESS_CODE {
+    if !todo_code_ok(&payload.code) {
         return (StatusCode::UNAUTHORIZED, Json(json!({"error": "invalid code"}))).into_response();
     }
     if !safe_upload_filename(&payload.name) {
