@@ -44,6 +44,8 @@ FROM docker.io/library/rust:1-bookworm AS server
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY src src
+# the /todo page is compiled in (include_str!)
+COPY todo-admin todo-admin
 RUN cargo build --release --locked
 
 # --- runtime -----------------------------------------------------------------

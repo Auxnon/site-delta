@@ -1,0 +1,606 @@
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Feed Admin</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0d0d0d;
+    color: #eee;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: clamp(16px, 4vw, 32px) clamp(14px, 4vw, 24px) 60px;
+    line-height: 1.4;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #8a8a8a; margin: 0 0 10px; }
+  p { margin: 0; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+  .card {
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  input[type="text"], input[type="url"], select {
+    width: 100%;
+    padding: 11px 12px;
+    margin: 4px 0 4px;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    color: #eee;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  input[type="text"]:focus, input[type="url"]:focus, select:focus {
+    outline: none;
+    border-color: #3a7bd5;
+  }
+  label { display: block; font-size: 12px; color: #999; margin-bottom: 2px; }
+
+  button {
+    padding: 11px 16px;
+    background: #3a7bd5;
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    min-height: 44px;
+  }
+  button:hover { background: #2f65ad; }
+  button:active { background: #28568f; }
+  button.secondary { background: #2a2a2a; color: #ddd; }
+  button.secondary:hover { background: #353535; }
+  button.danger { background: #a83a3a; }
+  button.danger:hover { background: #8c2f2f; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #save-btn { width: 100%; font-size: 16px; padding: 14px; margin-top: 4px; }
+
+  #preview {
+    max-width: 100%;
+    max-height: 220px;
+    display: block;
+    margin: 12px auto 0;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    background: #1e1e1e;
+  }
+  #status { margin-top: 12px; font-size: 13px; white-space: pre-wrap; color: #bbb; }
+
+  #gate { text-align: center; margin-top: 25vh; }
+  #gate input { max-width: 180px; margin: 0 auto 14px; text-align: center; letter-spacing: 0.1em; }
+  #gate-status { margin-top: 10px; font-size: 13px; color: #999; min-height: 16px; }
+
+  hr { border: none; border-top: 1px solid #262626; margin: 16px 0; }
+  .hidden { display: none !important; }
+
+  .checkbox-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; min-height: 28px; }
+  .checkbox-row input[type="checkbox"] { width: 20px; height: 20px; margin: 0; flex-shrink: 0; }
+  .checkbox-row label { font-size: 14px; color: #eee; margin: 0; }
+  input[type="range"] { width: 100%; margin: 8px 0 4px; }
+
+  /* --- drag & drop / camera --- */
+  #dropzone {
+    border: 2px dashed #3a3a3a;
+    border-radius: 10px;
+    padding: 20px 12px;
+    text-align: center;
+    margin-top: 10px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  #dropzone.drag-over { border-color: #3a7bd5; background: rgba(58, 123, 213, 0.08); }
+  #dropzone p { font-size: 13px; color: #888; margin-bottom: 10px; }
+  .dropzone-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .dropzone-btns button { flex: 1; min-width: 130px; }
+
+  #camera-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  #camera-modal-inner {
+    background: #161616;
+    border-radius: 12px;
+    padding: 16px;
+    width: 100%;
+    max-width: 480px;
+  }
+  #camera-video {
+    width: 100%;
+    border-radius: 8px;
+    background: #000;
+    max-height: 60vh;
+  }
+  .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .modal-btns button { flex: 1; }
+  #camera-status { font-size: 13px; color: #d08a8a; margin-top: 10px; min-height: 16px; }
+
+  /* --- Xteink preview --- */
+  #xt-wrap { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+  #xt-frame {
+    width: 200px;
+    aspect-ratio: 528 / 792;
+    background: #fff;
+    border: 1px solid #555;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    margin: 0 auto;
+  }
+  #xt-image {
+    flex: 0 0 72.2%;
+    background-size: cover;
+    background-position: center;
+    background-color: #ccc;
+  }
+  #xt-gap { flex: 0 0 2.53%; background: #fff; }
+  #xt-rows { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .xt-row { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 4px; }
+  .xt-row.grey { background: rgba(120, 120, 120, 0.35); }
+  .xt-row span {
+    font-size: 9px;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 91%;
+  }
+  #xt-caption { flex: 1; min-width: 180px; font-size: 12px; color: #888; }
+
+  /* --- uploads gallery --- */
+  #uploads-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .upload-cell {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 6px;
+    text-align: center;
+  }
+  .upload-cell img {
+    width: 100%;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #333;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .upload-cell .cell-btns { display: flex; gap: 4px; }
+  .upload-cell button { flex: 1; padding: 6px 2px; font-size: 11px; min-height: 32px; }
+  #uploads-empty { font-size: 13px; color: #777; grid-column: 1 / -1; }
+</style>
+
+<div id="gate">
+  <h1>Feed Admin</h1>
+  <div class="subtitle">Enter access code</div>
+  <input id="code-input" type="text" inputmode="numeric" placeholder="code" />
+  <div>
+    <button id="unlock-btn">Unlock</button>
+  </div>
+  <div id="gate-status"></div>
+</div>
+
+<div id="panel" class="hidden">
+  <h1>Update Feed</h1>
+  <div class="subtitle">Xteink X3 sleep-screen image &amp; list</div>
+
+  <div class="card">
+    <h2>Image</h2>
+    <label for="image-url">Image URL</label>
+    <input id="image-url" type="url" placeholder="https://example.com/image.png" />
+
+    <div id="dropzone">
+      <p>Drag &amp; drop a PNG here</p>
+      <div class="dropzone-btns">
+        <button type="button" id="browse-btn">Choose file</button>
+        <button type="button" id="camera-btn">Take photo</button>
+      </div>
+      <input id="image-file" type="file" accept="image/png" class="hidden" />
+    </div>
+
+    <img id="preview" alt="preview" />
+  </div>
+
+  <div class="card">
+    <h2>Previous uploads</h2>
+    <div id="uploads-list"></div>
+  </div>
+
+  <div class="card">
+    <h2>Processing</h2>
+    <label for="fit-mode">Fit</label>
+    <select id="fit-mode">
+      <option value="pad">Fit with whitespace (keep aspect ratio)</option>
+      <option value="stretch">Stretch to fill</option>
+    </select>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="dodge-check" />
+      <label for="dodge-check">Brighten image for e-ink (dodge)</label>
+    </div>
+    <input id="dodge-range" type="range" min="0" max="100" value="30" class="hidden" />
+  </div>
+
+  <div class="card">
+    <div class="checkbox-row">
+      <input type="checkbox" id="items-disabled-check" />
+      <label for="items-disabled-check">Disable items (image fills whole screen)</label>
+    </div>
+
+    <div id="items-block">
+      <h2 style="margin-top:14px;">List items (5)</h2>
+      <input class="item" type="text" placeholder="Item 1" />
+      <input class="item" type="text" placeholder="Item 2" />
+      <input class="item" type="text" placeholder="Item 3" />
+      <input class="item" type="text" placeholder="Item 4" />
+      <input class="item" type="text" placeholder="Item 5" />
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Xteink X3 preview (528&times;792)</h2>
+    <div id="xt-wrap">
+      <div id="xt-frame">
+        <div id="xt-image"></div>
+        <div id="xt-gap"></div>
+        <div id="xt-rows"></div>
+      </div>
+      <div id="xt-caption">
+        Approximate render (true colors — the actual output is dithered 1-bit black &amp;
+        white). On save the image is fetched/converted server-side to the exact panel
+        dimensions (528&times;572 with items, 528&times;792 without), fit per the mode
+        above, optionally dodged, dithered, and stored as a small 1-bit BMP served over
+        plain http:// for a fast, conversion-free sync.
+      </div>
+    </div>
+  </div>
+
+  <button id="save-btn">Save</button>
+  <div id="status"></div>
+</div>
+
+<div id="camera-modal" class="hidden">
+  <div id="camera-modal-inner">
+    <video id="camera-video" autoplay playsinline muted></video>
+    <canvas id="camera-canvas" class="hidden"></canvas>
+    <div class="modal-btns">
+      <button type="button" id="camera-capture-btn">Capture</button>
+      <button type="button" id="camera-cancel-btn" class="secondary">Cancel</button>
+    </div>
+    <div id="camera-status"></div>
+  </div>
+</div>
+
+<script>
+  let code = "";
+  let cameraStream = null;
+
+  const gate = document.getElementById("gate");
+  const panel = document.getElementById("panel");
+  const codeInput = document.getElementById("code-input");
+  const unlockBtn = document.getElementById("unlock-btn");
+  const gateStatus = document.getElementById("gate-status");
+
+  const imageUrl = document.getElementById("image-url");
+  const imageFile = document.getElementById("image-file");
+  const dropzone = document.getElementById("dropzone");
+  const browseBtn = document.getElementById("browse-btn");
+  const cameraBtn = document.getElementById("camera-btn");
+  const uploadsList = document.getElementById("uploads-list");
+  const preview = document.getElementById("preview");
+  const fitMode = document.getElementById("fit-mode");
+  const items = document.querySelectorAll(".item");
+  const itemsBlock = document.getElementById("items-block");
+  const itemsDisabledCheck = document.getElementById("items-disabled-check");
+  const dodgeCheck = document.getElementById("dodge-check");
+  const dodgeRange = document.getElementById("dodge-range");
+  const saveBtn = document.getElementById("save-btn");
+  const status = document.getElementById("status");
+
+  const xtImage = document.getElementById("xt-image");
+  const xtGap = document.getElementById("xt-gap");
+  const xtRows = document.getElementById("xt-rows");
+
+  const cameraModal = document.getElementById("camera-modal");
+  const cameraVideo = document.getElementById("camera-video");
+  const cameraCanvas = document.getElementById("camera-canvas");
+  const cameraCaptureBtn = document.getElementById("camera-capture-btn");
+  const cameraCancelBtn = document.getElementById("camera-cancel-btn");
+  const cameraStatus = document.getElementById("camera-status");
+
+  function renderPreview() {
+    if (imageUrl.value) preview.src = imageUrl.value;
+
+    const brightness = dodgeCheck.checked ? 1 + Number(dodgeRange.value) / 100 : 1;
+    const filter = "brightness(" + brightness + ")";
+    preview.style.filter = filter;
+    xtImage.style.filter = filter;
+    xtImage.style.backgroundImage = imageUrl.value ? "url('" + imageUrl.value + "')" : "none";
+
+    const disabled = itemsDisabledCheck.checked;
+    if (disabled) {
+      xtImage.style.flex = "1 1 100%";
+      xtGap.classList.add("hidden");
+      xtRows.classList.add("hidden");
+    } else {
+      xtImage.style.flex = "0 0 72.2%";
+      xtGap.classList.remove("hidden");
+      xtRows.classList.remove("hidden");
+      xtRows.innerHTML = "";
+      items.forEach((input, i) => {
+        const row = document.createElement("div");
+        row.className = "xt-row" + (i % 2 === 1 ? " grey" : "");
+        const span = document.createElement("span");
+        span.textContent = input.value || "Item " + (i + 1);
+        row.appendChild(span);
+        xtRows.appendChild(row);
+      });
+    }
+  }
+
+  async function loadUploads() {
+    uploadsList.innerHTML = "";
+    try {
+      const res = await fetch("/todo/api/uploads?code=" + encodeURIComponent(code));
+      const data = await res.json();
+      const files = data.files || [];
+      if (files.length === 0) {
+        uploadsList.innerHTML = '<div id="uploads-empty">no uploads yet</div>';
+        return;
+      }
+      files.forEach((f) => {
+        const cell = document.createElement("div");
+        cell.className = "upload-cell";
+
+        const img = document.createElement("img");
+        img.src = f.url;
+        img.alt = f.name;
+        cell.appendChild(img);
+
+        const btns = document.createElement("div");
+        btns.className = "cell-btns";
+
+        const useBtn = document.createElement("button");
+        useBtn.textContent = "Use";
+        useBtn.addEventListener("click", () => {
+          imageUrl.value = f.url;
+          renderPreview();
+        });
+        btns.appendChild(useBtn);
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.className = "danger";
+        delBtn.addEventListener("click", async () => {
+          if (!confirm("Delete " + f.name + "?")) return;
+          try {
+            const r = await fetch("/todo/api/uploads/delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, name: f.name }),
+            });
+            if (r.ok) {
+              loadUploads();
+            } else {
+              const d = await r.json();
+              status.textContent = "delete failed: " + (d.error || r.status);
+            }
+          } catch (e) {
+            status.textContent = "delete error: " + e;
+          }
+        });
+        btns.appendChild(delBtn);
+
+        cell.appendChild(btns);
+        uploadsList.appendChild(cell);
+      });
+    } catch (e) {
+      uploadsList.textContent = "error loading uploads: " + e;
+    }
+  }
+
+  // --- shared upload path for file picker, drag&drop, and camera capture ---
+  async function uploadFile(file) {
+    if (file.type !== "image/png") {
+      status.textContent = "only .png files are allowed";
+      return;
+    }
+    status.textContent = "uploading...";
+    const form = new FormData();
+    form.append("code", code);
+    form.append("file", file);
+    try {
+      const res = await fetch("/todo/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        status.textContent = "upload failed: " + (data.error || res.status);
+        return;
+      }
+      imageUrl.value = data.url;
+      renderPreview();
+      status.textContent = "uploaded: " + data.url;
+      loadUploads();
+    } catch (e) {
+      status.textContent = "upload error: " + e;
+    }
+  }
+
+  imageUrl.addEventListener("input", renderPreview);
+  items.forEach((i) => i.addEventListener("input", renderPreview));
+
+  dodgeCheck.addEventListener("change", () => {
+    dodgeRange.classList.toggle("hidden", !dodgeCheck.checked);
+    renderPreview();
+  });
+  dodgeRange.addEventListener("input", renderPreview);
+
+  itemsDisabledCheck.addEventListener("change", () => {
+    itemsBlock.classList.toggle("hidden", itemsDisabledCheck.checked);
+    renderPreview();
+  });
+
+  async function unlock() {
+    code = codeInput.value.trim();
+    gateStatus.textContent = "checking...";
+    try {
+      const res = await fetch("/todo/api/feed?code=" + encodeURIComponent(code));
+      if (!res.ok) {
+        gateStatus.textContent = "invalid code";
+        return;
+      }
+      const feed = await res.json();
+      imageUrl.value = feed.image || "";
+      (feed.items || []).forEach((v, i) => {
+        if (items[i]) items[i].value = v;
+      });
+      const noItems = !feed.items;
+      itemsDisabledCheck.checked = noItems;
+      itemsBlock.classList.toggle("hidden", noItems);
+
+      gate.classList.add("hidden");
+      panel.classList.remove("hidden");
+      renderPreview();
+      loadUploads();
+    } catch (e) {
+      gateStatus.textContent = "error: " + e;
+    }
+  }
+  unlockBtn.addEventListener("click", unlock);
+  codeInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") unlock();
+  });
+
+  // --- file picker ---
+  browseBtn.addEventListener("click", () => imageFile.click());
+  imageFile.addEventListener("change", () => {
+    const file = imageFile.files[0];
+    imageFile.value = "";
+    if (file) uploadFile(file);
+  });
+
+  // --- drag & drop ---
+  ["dragenter", "dragover"].forEach((evt) =>
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.add("drag-over");
+    })
+  );
+  ["dragleave", "dragend"].forEach((evt) =>
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("drag-over");
+    })
+  );
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("drag-over");
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  });
+
+  // --- camera capture ---
+  const hasCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  if (!hasCamera) {
+    cameraBtn.disabled = true;
+    cameraBtn.title = "Camera not available in this browser/context (needs https)";
+  }
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      cameraStream = null;
+    }
+    cameraVideo.srcObject = null;
+  }
+
+  async function openCamera() {
+    cameraStatus.textContent = "";
+    cameraModal.classList.remove("hidden");
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
+      cameraVideo.srcObject = cameraStream;
+    } catch (e) {
+      cameraStatus.textContent = "camera unavailable: " + e.message;
+    }
+  }
+
+  function closeCamera() {
+    stopCamera();
+    cameraModal.classList.add("hidden");
+  }
+
+  cameraBtn.addEventListener("click", openCamera);
+  cameraCancelBtn.addEventListener("click", closeCamera);
+
+  cameraCaptureBtn.addEventListener("click", () => {
+    if (!cameraVideo.videoWidth) {
+      cameraStatus.textContent = "camera not ready yet, try again in a moment";
+      return;
+    }
+    cameraCanvas.width = cameraVideo.videoWidth;
+    cameraCanvas.height = cameraVideo.videoHeight;
+    cameraCanvas.getContext("2d").drawImage(cameraVideo, 0, 0);
+    cameraCanvas.toBlob((blob) => {
+      if (!blob) {
+        cameraStatus.textContent = "capture failed, try again";
+        return;
+      }
+      closeCamera();
+      uploadFile(new File([blob], "camera-capture.png", { type: "image/png" }));
+    }, "image/png");
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const disabled = itemsDisabledCheck.checked;
+    const payload = {
+      code,
+      image: imageUrl.value,
+      items: disabled ? null : Array.from(items).map((i) => i.value),
+      dodge: dodgeCheck.checked,
+      dodge_amount: Number(dodgeRange.value),
+      fit: fitMode.value,
+    };
+    status.textContent = "saving...";
+    try {
+      const res = await fetch("/todo/api/feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        imageUrl.value = data.image;
+        renderPreview();
+        status.textContent = "saved! image converted & stored at " + data.image;
+        loadUploads();
+      } else {
+        status.textContent = "save failed: " + (data.error || res.status);
+      }
+    } catch (e) {
+      status.textContent = "save error: " + e;
+    }
+  });
+
+  renderPreview();
+</script>
